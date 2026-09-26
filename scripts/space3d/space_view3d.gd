@@ -306,6 +306,7 @@ func sync_ship(delta: float) -> void:
 		flame.scale = Vector3(1.0+thrust*0.15,length,1.0+thrust*0.15)
 		flame.position.z = 2.5+0.8*length
 		ship.get_node("Tip"+side).visible = fposmod(clock,1.2)<0.6
+	ship.get_node("Mast").visible = fposmod(clock*0.8,1.0)<0.2
 	for child in ship.get_children():
 		if not child.name.begins_with("Hardpoint"):
 			continue
@@ -313,7 +314,13 @@ func sync_ship(delta: float) -> void:
 		var on: bool = float(sim.active.get(id,0.0))>0.0
 		var deploy: Node3D = child.get_node("Deploy")
 		match id:
-			"boost": deploy.get_node("Plume").visible = on
+			"boost":
+				deploy.get_node("Plume").visible = on
+				deploy.get_node("Plume").scale = Vector3(1,1.0+sin(clock*50.0)*0.15,1)
+				for vane in ["VaneA","VaneB"]:
+					var pivot: Node3D = child.get_node(vane)
+					var vane_side: float = -1.0 if vane=="VaneA" else 1.0
+					pivot.rotation.y = lerpf(pivot.rotation.y,vane_side*(0.95 if on else 0.0),minf(1.0,delta*14))
 			"tether": deploy.position.z = lerpf(deploy.position.z,-0.5 if on else 0.0,minf(1.0,delta*10))
 			"shield":
 				var spinner: Node3D = deploy.get_node("Spinner")
@@ -325,6 +332,8 @@ func sync_ship(delta: float) -> void:
 				dish.rotation.y += delta*(10.0 if on else 0.6)
 			"rail": deploy.position.z = lerpf(deploy.position.z,-0.7 if on else 0.0,minf(1.0,delta*10))
 			"drone":
+				var hatch: Node3D = child.get_node("Hatch")
+				hatch.rotation.x = lerpf(hatch.rotation.x,-1.2 if on else 0.0,minf(1.0,delta*8))
 				for n in range(2):
 					var bot: Node3D = deploy.get_node("Bot%d" % n)
 					bot.visible = on

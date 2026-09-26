@@ -709,6 +709,8 @@ func use_skill(slot: int) -> bool:
 		"emp":
 			pulse(position_ship,Color("bca9d2"),240,0.7)
 			vfx.ring(position_ship,Color("d5bce8"),240,0.6,3.0)
+			if vfx.has_method("shockwave"):
+				vfx.shockwave(position_ship,240,Color("d5bce8"),0.7)
 			vfx.ring(position_ship,Color("9a86b5"),200,0.9,1.2)
 			vfx.emit("bloom",position_ship,Vector2.ZERO,0.3,30,Color("d5bce8"),{"grow":200})
 			add_shake(5)
@@ -738,6 +740,8 @@ func use_skill(slot: int) -> bool:
 			var end: Vector2 = position_ship+aim*1200
 			effects.append({"kind":"beam","pos":position_ship,"end":end,"life":0.25,"max":0.25,"color":Color("e1cca0")})
 			vfx.beam(position_ship+aim*40,end,Color("e8d4a4"),5.0,0.35)
+			vfx.ring(position_ship+aim*50,Color("f5d9a0"),60,0.35,2.4)
+			vfx.burst(position_ship+aim*50,Color("fff0c8"),10,200,520,0.35,1.0,"spark",aim.angle(),0.5,{"drag":3.0})
 			vfx.muzzle(position_ship+aim*45,aim.angle(),Color("f1ddb0"))
 			velocity_ship -= aim*180.0
 			add_shake(6)

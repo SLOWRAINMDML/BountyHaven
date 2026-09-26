@@ -87,42 +87,101 @@ const STEEL = Color("46545c")
 const STEEL_DARK = Color("2b353b")
 const GLASS = Color("6fd6ca")
 
-## The player's cream-and-rust courier. Four named hardpoints show the equipped modules.
+## The player's cream-and-rust courier: layered hull plates, seams, repair patches with
+## rivets, side conduits, radiator spine, framed canopy, RCS blocks, heat-stained twin
+## engines and four named hardpoints whose module parts deploy when used.
 static func player_ship(modules: Array) -> Node3D:
 	var root = Node3D.new()
 	var hull = mat("cream",CREAM,0.0,0.55,0.15)
+	var hull2 = mat("cream_warm",Color("e2d2ad"),0.0,0.6,0.15)
+	var dirty = mat("cream_dirty",Color("b9a887"),0.0,0.75,0.15)
 	var shade = mat("cream_shade",CREAM_SHADE,0.0,0.6,0.2)
 	var rust = mat("rust",RUST,0.0,0.7,0.3)
+	var rust_dark = mat("rust_dark",RUST_DARK,0.0,0.8,0.3)
 	var steel = mat("steel",STEEL,0.0,0.45,0.7)
-	# Fuselage, tapered nose and dorsal spine.
-	part(root,box(Vector3(1.25,0.62,2.9)),hull,Vector3(0,0,0.35))
-	part(root,cyl(0.0,0.72,1.9,6),hull,Vector3(0,0,-1.95),Vector3(-PI*0.5,0,0),Vector3(1.0,1.0,0.62))
-	part(root,box(Vector3(0.5,0.28,2.4)),shade,Vector3(0,0.42,0.55))
-	part(root,box(Vector3(1.28,0.08,0.5)),rust,Vector3(0,0.31,-0.35))
-	# Cockpit canopy.
-	part(root,sphere(0.42,12,6),mat("glass",GLASS,1.4,0.1,0.1),Vector3(0,0.36,-1.05),Vector3.ZERO,Vector3(0.9,0.62,1.7))
-	# Cargo pods with rust bands.
+	var steel_dark = mat("steel_dark",STEEL_DARK,0.0,0.5,0.6)
+	var ink = mat("ink",Color("1c252a"),0.0,0.9,0.1)
+	var copper = mat("copper",Color("b0764a"),0.0,0.35,0.85)
+	var heat = mat("heat",Color("5a4636"),0.0,0.4,0.8)
+	# Lower hull, upper deck plate and chamfered shoulders.
+	part(root,box(Vector3(1.34,0.46,3.1)),shade,Vector3(0,-0.12,0.35))
+	part(root,box(Vector3(1.12,0.3,2.7)),hull,Vector3(0,0.24,0.3))
+	for side in [-1.0,1.0]:
+		part(root,box(Vector3(0.22,0.2,2.7)),hull2,Vector3(side*0.62,0.14,0.3),Vector3(0,0,side*0.6))
+	# Nose cone, rust cap band and sensor tip.
+	part(root,cyl(0.0,0.7,1.9,8),hull,Vector3(0,0,-2.0),Vector3(-PI*0.5,0,0),Vector3(1.0,1.0,0.6))
+	part(root,cyl(0.5,0.56,0.22,8),rust,Vector3(0,0,-1.45),Vector3(-PI*0.5,0,0),Vector3(1.0,1.0,0.62))
+	part(root,sphere(0.08,8,4),mat("sensor",Color("ffb27a"),3.0),Vector3(0,0.02,-2.95))
+	# RCS thruster blocks either side of the nose.
+	for side in [-1.0,1.0]:
+		part(root,box(Vector3(0.16,0.18,0.34)),steel,Vector3(side*0.5,0,-1.2))
+		part(root,cyl(0.05,0.07,0.08,6),steel_dark,Vector3(side*0.6,0,-1.2),Vector3(0,0,PI*0.5))
+	# Framed canopy.
+	part(root,sphere(0.42,14,7),mat("glass",GLASS,1.2,0.08,0.1),Vector3(0,0.4,-1.0),Vector3.ZERO,Vector3(0.95,0.62,1.75))
+	part(root,box(Vector3(0.05,0.1,1.25)),ink,Vector3(0,0.66,-1.0))
+	for z in [-1.35,-0.8]:
+		part(root,box(Vector3(0.78,0.08,0.05)),ink,Vector3(0,0.55,z))
+	part(root,box(Vector3(0.9,0.12,0.12)),rust_dark,Vector3(0,0.42,-0.3))
+	# Dorsal radiator spine with fins, and a rear antenna mast with a beacon.
+	part(root,box(Vector3(0.44,0.22,1.9)),steel,Vector3(0,0.48,0.75))
+	for i in range(7):
+		part(root,box(Vector3(0.66,0.16,0.05)),steel_dark,Vector3(0,0.62,0.05+i*0.22))
+	part(root,cyl(0.025,0.035,1.0,6),steel_dark,Vector3(0.28,0.95,1.55))
+	part(root,sphere(0.06,6,4),mat("mast_light",Color("ffd08a"),5.0),Vector3(0.28,1.47,1.55),Vector3.ZERO,Vector3.ONE,"Mast")
+	# Panel seams across the deck.
+	for z in [-0.55,0.35,1.15]:
+		part(root,box(Vector3(1.14,0.012,0.03)),ink,Vector3(0,0.395,z))
+	part(root,box(Vector3(0.03,0.012,2.5)),ink,Vector3(-0.33,0.395,0.3))
+	# Repair patches with rivets: the ship has lived a life.
+	var patches: Array = [[Vector3(-0.28,0.4,0.0),Vector2(0.34,0.3),rust],[Vector3(0.3,0.4,0.9),Vector2(0.28,0.4),dirty],[Vector3(0.22,0.4,-0.35),Vector2(0.22,0.18),hull2]]
+	for p in patches:
+		var at: Vector3 = p[0]
+		var size2: Vector2 = p[1]
+		part(root,box(Vector3(size2.x,0.02,size2.y)),p[2],at)
+		for c in [Vector2(-1,-1),Vector2(1,-1),Vector2(1,1),Vector2(-1,1)]:
+			part(root,sphere(0.02,4,2),steel_dark,at+Vector3(c.x*(size2.x*0.5-0.03),0.015,c.y*(size2.y*0.5-0.03)))
+	# Cargo pods: banded, end-capped, with stencil blocks and side conduits.
 	for side in [-1.0,1.0]:
 		part(root,box(Vector3(0.72,0.66,2.3)),shade,Vector3(side*1.05,-0.05,0.55))
-		part(root,box(Vector3(0.74,0.68,0.22)),rust,Vector3(side*1.05,-0.05,-0.15))
-		part(root,box(Vector3(0.74,0.68,0.22)),rust,Vector3(side*1.05,-0.05,1.25))
-		var wing = part(root,box(Vector3(1.5,0.1,1.05)),steel,Vector3(side*1.95,-0.15,0.95),Vector3(0,side*0.32,0))
-		part(wing,box(Vector3(0.3,0.12,1.07)),rust,Vector3(side*0.62,0,0))
-		var tip = part(root,sphere(0.09,6,4),mat("tip_"+str(side),Color("ef6a55") if side<0 else Color("8fe39a"),3.0),Vector3(side*2.62,-0.1,1.2))
+		part(root,box(Vector3(0.6,0.08,2.2)),hull,Vector3(side*1.05,0.3,0.55))
+		for z in [-0.15,0.55,1.25]:
+			part(root,box(Vector3(0.75,0.69,0.16)),rust,Vector3(side*1.05,-0.05,z))
+		part(root,cyl(0.3,0.33,0.2,10),steel,Vector3(side*1.05,-0.05,1.78),Vector3(PI*0.5,0,0))
+		part(root,cyl(0.3,0.26,0.25,10),hull2,Vector3(side*1.05,-0.05,-0.62),Vector3(PI*0.5,0,0))
+		for k in range(3):
+			part(root,box(Vector3(0.01,0.08,0.12)),ink,Vector3(side*1.415,0.12,0.15+k*0.16))
+		for y in [0.02,-0.16]:
+			part(root,cyl(0.035,0.035,2.2,6),copper,Vector3(side*0.69,y,0.45),Vector3(PI*0.5,0,0))
+		for z in [-0.3,0.4,1.1]:
+			part(root,box(Vector3(0.06,0.26,0.05)),steel_dark,Vector3(side*0.7,-0.07,z))
+		# Swept wings with rust tips, cream leading edge and a vertical winglet.
+		var wing = part(root,box(Vector3(1.55,0.09,1.05)),steel,Vector3(side*1.98,-0.18,0.95),Vector3(0,side*0.32,0))
+		part(wing,box(Vector3(0.32,0.11,1.07)),rust,Vector3(side*0.62,0,0))
+		part(wing,box(Vector3(1.4,0.1,0.14)),hull,Vector3(side*-0.05,0.01,-0.48))
+		part(wing,box(Vector3(0.012,0.1,0.9)),ink,Vector3(side*0.1,0.01,0.05))
+		part(wing,box(Vector3(0.06,0.36,0.5)),rust_dark,Vector3(side*0.78,0.18,0.2))
+		var tip = part(root,sphere(0.08,6,4),mat("tip_"+str(side),Color("ef6a55") if side<0 else Color("8fe39a"),4.0),Vector3(side*2.66,-0.02,1.28))
 		tip.name = "Tip"+("L" if side<0 else "R")
-		# Twin engines, nozzle glow and thrust flame.
-		var engine = part(root,cyl(0.3,0.36,0.9),steel,Vector3(side*0.55,-0.05,2.05),Vector3(PI*0.5,0,0))
+		# Engine nacelle: intake ring, heat-stained collar, nozzle, inner cone, glow and flame.
+		var engine = part(root,cyl(0.3,0.36,0.95,14),steel,Vector3(side*0.55,-0.05,2.05),Vector3(PI*0.5,0,0))
 		engine.name = "Engine"+("L" if side<0 else "R")
-		part(root,cyl(0.26,0.26,0.05),mat("nozzle",Color("a6f3e8"),4.0),Vector3(side*0.55,-0.05,2.52),Vector3(PI*0.5,0,0))
+		part(root,torus(0.3,0.4,18),copper,Vector3(side*0.55,-0.05,1.62),Vector3(PI*0.5,0,0))
+		part(root,cyl(0.39,0.34,0.22,14),heat,Vector3(side*0.55,-0.05,2.45),Vector3(PI*0.5,0,0))
+		part(root,cyl(0.1,0.24,0.2,10),steel_dark,Vector3(side*0.55,-0.05,2.52),Vector3(PI*0.5,0,0))
+		part(root,cyl(0.28,0.28,0.04,14),mat("nozzle",Color("a6f3e8"),4.0),Vector3(side*0.55,-0.05,2.58),Vector3(PI*0.5,0,0))
 		var flame = part(root,cyl(0.0,0.26,1.6,10),glow("flame_teal",Color(0.45,0.95,0.88),0.8),Vector3(side*0.55,-0.05,3.3),Vector3(PI*0.5,0,0))
 		flame.name = "Flame"+("L" if side<0 else "R")
-	var mounts: Array = [Vector3(-1.75,0.15,1.3),Vector3(1.75,0.15,1.3),Vector3(-0.95,0.3,-0.55),Vector3(0.95,0.3,-0.55)]
+		var core = part(flame,cyl(0.0,0.12,1.2,8),glow("flame_core",Color(0.9,1.0,0.97),0.9),Vector3(0,-0.15,0))
+		core.name = "Core"
+	var mounts: Array = [Vector3(-1.75,0.15,1.3),Vector3(1.75,0.15,1.3),Vector3(-0.95,0.34,-0.55),Vector3(0.95,0.34,-0.55)]
 	for i in range(mini(modules.size(),4)):
 		var hp = Node3D.new()
 		hp.name = "Hardpoint%d" % i
 		hp.position = mounts[i]
 		hp.set_meta("module",str(modules[i]))
 		root.add_child(hp)
+		# Mounting collar so every module visibly bolts onto the hull.
+		part(hp,cyl(0.24,0.28,0.1,10),steel_dark,Vector3(0,-0.12,0))
 		build_module(hp,str(modules[i]))
 	return root
 
@@ -130,33 +189,87 @@ static func player_ship(modules: Array) -> Node3D:
 static func build_module(hp: Node3D, id: String) -> void:
 	var steel = mat("steel",STEEL,0.0,0.45,0.7)
 	var dark = mat("steel_dark",STEEL_DARK,0.0,0.5,0.6)
+	var brass = mat("brass",Color("c9ad73"),0.0,0.35,0.85)
+	var cream = mat("cream",CREAM,0.0,0.55,0.15)
+	var rust = mat("rust",RUST,0.0,0.7,0.3)
+	var ink = mat("ink",Color("1c252a"),0.0,0.9,0.1)
 	var deploy = Node3D.new()
 	deploy.name = "Deploy"
 	hp.add_child(deploy)
 	match id:
 		"boost":
-			part(hp,box(Vector3(0.36,0.34,0.9)),steel,Vector3.ZERO)
-			part(deploy,box(Vector3(0.1,0.3,0.6)),mat("rust",RUST),Vector3(0.24,0,0.1))
-			part(deploy,cyl(0.0,0.2,1.2,8),glow("boost",Color(0.6,1.0,0.92),0.9),Vector3(0,0,1.1),Vector3(PI*0.5,0,0),Vector3.ONE,"Plume")
+			# Side thruster pod whose two vanes swing open when firing.
+			part(hp,box(Vector3(0.38,0.36,0.95)),cream,Vector3.ZERO)
+			part(hp,box(Vector3(0.4,0.1,0.5)),rust,Vector3(0,0.2,0.1))
+			part(hp,cyl(0.14,0.18,0.2,10),dark,Vector3(0,0,0.55),Vector3(PI*0.5,0,0))
+			part(hp,cyl(0.13,0.13,0.03,10),mat("boost_nozzle",Color("9ff2e2"),3.0),Vector3(0,0,0.66),Vector3(PI*0.5,0,0))
+			for side in [-1.0,1.0]:
+				var pivot = Node3D.new()
+				pivot.name = "Vane"+("A" if side<0 else "B")
+				pivot.position = Vector3(side*0.2,0,0.3)
+				hp.add_child(pivot)
+				part(pivot,box(Vector3(0.04,0.3,0.55)),steel,Vector3(side*0.02,0,0.22))
+			part(deploy,cyl(0.0,0.2,1.3,10),glow("boost",Color(0.6,1.0,0.92),0.9),Vector3(0,0,1.3),Vector3(PI*0.5,0,0),Vector3.ONE,"Plume")
 		"tether":
-			part(hp,box(Vector3(0.34,0.32,0.7)),mat("brass",Color("c9ad73"),0.0,0.4,0.8),Vector3.ZERO)
-			part(deploy,cyl(0.08,0.08,0.9,8),dark,Vector3(0,0.05,-0.6),Vector3(PI*0.5,0,0))
-			part(deploy,cyl(0.0,0.14,0.25,6),mat("brass_glow",Color("f2e2a8"),2.0),Vector3(0,0.05,-1.12),Vector3(-PI*0.5,0,0))
+			# Turret base, cable spool, barrel and brass harpoon head.
+			part(hp,cyl(0.2,0.24,0.2,12),steel,Vector3.ZERO)
+			part(hp,torus(0.1,0.2,14),copper_mat(),Vector3(0,0.12,0.18),Vector3(0,0,PI*0.5))
+			part(deploy,box(Vector3(0.2,0.2,0.5)),cream,Vector3(0,0.12,-0.1))
+			part(deploy,cyl(0.07,0.08,0.9,8),dark,Vector3(0,0.14,-0.6),Vector3(PI*0.5,0,0))
+			part(deploy,cyl(0.0,0.15,0.3,6),brass,Vector3(0,0.14,-1.18),Vector3(-PI*0.5,0,0))
+			for side in [-1.0,1.0]:
+				part(deploy,box(Vector3(0.14,0.03,0.12)),rust,Vector3(side*0.1,0.14,-1.0),Vector3(0,side*0.5,0))
 		"shield":
-			part(hp,cyl(0.2,0.28,0.2),steel,Vector3.ZERO)
-			part(deploy,torus(0.22,0.36,16),mat("shield_emit",Color("9be9dc"),2.2),Vector3(0,0.18,0),Vector3.ZERO,Vector3.ONE,"Spinner")
+			# Projector: base, rotating ring and three prism crystals.
+			part(hp,cyl(0.2,0.28,0.22,12),steel,Vector3.ZERO)
+			var spinner = Node3D.new()
+			spinner.name = "Spinner"
+			spinner.position = Vector3(0,0.2,0)
+			deploy.add_child(spinner)
+			part(spinner,torus(0.2,0.3,18),mat("shield_emit",Color("9be9dc"),2.2),Vector3.ZERO)
+			for k in range(3):
+				var a: float = TAU*k/3.0
+				part(spinner,sphere(0.08,4,2),mat("prism",Color("c9fff6"),2.5,0.1,0.2),Vector3(cos(a)*0.25,0.08,sin(a)*0.25),Vector3.ZERO,Vector3(1,1.8,1))
 		"emp":
-			part(hp,cyl(0.14,0.18,0.25),steel,Vector3.ZERO)
-			part(deploy,cyl(0.42,0.08,0.14,14),mat("emp_dish",Color("b9a6d8"),0.6),Vector3(0,0.22,0),Vector3.ZERO,Vector3.ONE,"Dish")
+			# Pedestal with an emitter dish that rises and spins.
+			part(hp,cyl(0.14,0.2,0.28,10),steel,Vector3.ZERO)
+			var dish = Node3D.new()
+			dish.name = "Dish"
+			dish.position = Vector3(0,0.22,0)
+			deploy.add_child(dish)
+			part(dish,cyl(0.44,0.1,0.14,16),mat("emp_dish",Color("b9a6d8"),0.5,0.4,0.6),Vector3.ZERO)
+			part(dish,torus(0.38,0.46,20),dark,Vector3(0,0.06,0))
+			part(dish,cyl(0.02,0.04,0.34,6),brass,Vector3(0,0.2,0))
+			part(dish,sphere(0.06,6,4),mat("emp_core",Color("e6d4ff"),4.0),Vector3(0,0.38,0))
 		"rail":
-			part(hp,box(Vector3(0.3,0.3,0.7)),steel,Vector3.ZERO)
-			part(deploy,cyl(0.07,0.09,1.8,8),dark,Vector3(0,0.05,-1.0),Vector3(PI*0.5,0,0))
-			part(deploy,cyl(0.05,0.05,1.6,6),mat("rail_emit",Color("f3dcaa"),2.5),Vector3(0,0.12,-1.0),Vector3(PI*0.5,0,0))
+			# Armored breech, twin conductor rails and three brass coils.
+			part(hp,box(Vector3(0.34,0.3,0.7)),cream,Vector3.ZERO)
+			part(hp,box(Vector3(0.36,0.08,0.3)),rust,Vector3(0,0.17,0.1))
+			for side in [-1.0,1.0]:
+				part(deploy,box(Vector3(0.05,0.08,1.9)),dark,Vector3(side*0.08,0.06,-1.05))
+			part(deploy,box(Vector3(0.05,0.03,1.8)),mat("rail_emit",Color("f3dcaa"),2.5),Vector3(0,0.06,-1.05))
+			for k in range(3):
+				part(deploy,torus(0.1,0.16,12),brass,Vector3(0,0.06,-0.45-k*0.45),Vector3(PI*0.5,0,0))
 		"drone":
-			part(hp,box(Vector3(0.5,0.3,0.55)),mat("olive",Color("98a883")),Vector3.ZERO)
+			# Hangar with a hatch that swings open; two repair drones launch when active.
+			part(hp,box(Vector3(0.52,0.32,0.58)),mat("olive",Color("98a883")),Vector3.ZERO)
+			part(hp,box(Vector3(0.54,0.05,0.12)),rust,Vector3(0,0.12,0.24))
+			var hatch = Node3D.new()
+			hatch.name = "Hatch"
+			hatch.position = Vector3(0,0.17,-0.27)
+			hp.add_child(hatch)
+			part(hatch,box(Vector3(0.46,0.04,0.5)),cream,Vector3(0,0,0.25))
+			part(hatch,box(Vector3(0.46,0.012,0.02)),ink,Vector3(0,0.025,0.25))
 			for n in range(2):
-				var bot = part(deploy,sphere(0.12,8,4),mat("drone_emit",Color("d4f0b4"),2.0),Vector3(0,0.3,0))
+				var bot = Node3D.new()
 				bot.name = "Bot%d" % n
+				deploy.add_child(bot)
+				part(bot,sphere(0.11,10,5),cream,Vector3.ZERO,Vector3.ZERO,Vector3(1,0.7,1))
+				part(bot,torus(0.14,0.18,12),dark,Vector3(0,0.05,0))
+				part(bot,sphere(0.05,6,3),mat("drone_emit",Color("d4f0b4"),3.0),Vector3(0,-0.05,-0.08))
+
+static func copper_mat() -> StandardMaterial3D:
+	return mat("copper",Color("b0764a"),0.0,0.35,0.85)
 
 ## Pirate escort gunship: rust-red, forward-swept, single hot engine.
 static func escort() -> Node3D:

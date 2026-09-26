@@ -24,6 +24,9 @@ var shard_mm: MultiMesh
 var ring_nodes: Array = []
 var ribbon_mesh: ImmediateMesh
 var label_pool: Array = []
+## Expanding translucent domes (EMP, heavy blasts) drawn from a small pool.
+var domes: Array = []
+var dome_nodes: Array = []
 var font: Font
 
 static func to3d(p: Vector2, h: float = 0.0) -> Vector3:
@@ -77,6 +80,24 @@ func _ready() -> void:
 		node.visible = false
 		add_child(node)
 		ring_nodes.append(node)
+	var dome_mesh = SphereMesh.new()
+	dome_mesh.radius = 1.0
+	dome_mesh.height = 1.0
+	dome_mesh.is_hemisphere = true
+	dome_mesh.radial_segments = 32
+	dome_mesh.rings = 12
+	for i in range(8):
+		var dome = MeshInstance3D.new()
+		dome.mesh = dome_mesh
+		var dm = StandardMaterial3D.new()
+		dm.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		dm.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		dm.blend_mode = BaseMaterial3D.BLEND_MODE_ADD
+		dm.cull_mode = BaseMaterial3D.CULL_DISABLED
+		dome.material_override = dm
+		dome.visible = false
+		add_child(dome)
+		dome_nodes.append(dome)
 	ribbon_mesh = ImmediateMesh.new()
 	var ribbon_node = MeshInstance3D.new()
 	ribbon_node.mesh = ribbon_mesh
@@ -190,6 +211,7 @@ func explosion(pos: Vector2, scale_value: float = 1.0, hot: Color = Color("ffb07
 	burst(pos,Color("7c858a"),int(12*scale_value)+4,90,320*scale_value,1.3,9.0*scale_value,"shard",0.0,TAU,{"drag":1.2})
 	for i in range(int(7*scale_value)+3):
 		smoke(pos,ink.lightened(0.1),20.0*scale_value,Vector2.from_angle(rng.randf()*TAU)*rng.randf_range(10,70))
+	shockwave(pos,110*scale_value,Color(hot,0.8),0.45)
 	ring(pos,Color(hot,0.9),95*scale_value,0.5,2.4)
 	ring(pos,Color(0.8,0.9,1.0,0.35),150*scale_value,0.8,1.0)
 
@@ -207,6 +229,11 @@ func beam(a: Vector2, b: Vector2, color: Color, width: float, life: float) -> vo
 
 func afterimage(pos: Vector2, yaw: float, scale_value: float, color: Color) -> void:
 	ribbons.append({"kind":"ghost","pos":pos,"yaw":yaw,"life":0.3,"max":0.3,"size":scale_value,"color":color})
+
+func shockwave(pos: Vector2, radius: float, color: Color, life: float = 0.6) -> void:
+	domes.append({"pos":pos,"radius":radius,"color":color,"life":life,"max":life})
+	if domes.size()>dome_nodes.size():
+		domes.remove_at(0)
 
 func hit_flash(color: Color, amount: float) -> void:
 	flash_color = color
@@ -231,7 +258,7 @@ func advance(delta: float) -> void:
 		p.vh *= maxf(0.0,1.0-p.drag*delta)
 		p.size += p.grow*delta
 		p.rot += Vector3(p.spin,p.spin*0.7,0)*delta
-	for list in [rings,ribbons,texts]:
+	for list in [rings,ribbons,texts,domes]:
 		for i in range(list.size()-1,-1,-1):
 			list[i].life -= delta
 			if list[i].life<=0.0:
@@ -291,6 +318,18 @@ func render() -> void:
 		node.position = to3d(r.pos,0.3)
 		node.scale = Vector3(radius,1.0+r.width,radius)
 		node.material_override.albedo_color = Color(r.color,r.color.a*(1.0-t2))
+	for i in range(dome_nodes.size()):
+		var dome: MeshInstance3D = dome_nodes[i]
+		if i>=domes.size():
+			dome.visible = false
+			continue
+		var d: Dictionary = domes[i]
+		var k: float = 1.0-d.life/d.max
+		var rr: float = maxf(0.05,d.radius/SCALE*(1.0-pow(1.0-k,3.0)))
+		dome.visible = true
+		dome.position = to3d(d.pos,-0.2)
+		dome.scale = Vector3(rr,rr*0.55,rr)
+		dome.material_override.albedo_color = Color(d.color,d.color.a*0.35*(1.0-k))
 	ribbon_mesh.clear_surfaces()
 	if not ribbons.is_empty():
 		ribbon_mesh.surface_begin(Mesh.PRIMITIVE_TRIANGLES)

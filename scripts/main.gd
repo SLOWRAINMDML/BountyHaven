@@ -5,6 +5,9 @@ const Habitat = preload("res://scripts/world/habitat.gd")
 const Space = preload("res://scripts/space/space_world.gd")
 const Ship = preload("res://scripts/space/ship_visual.gd")
 const SpaceView = preload("res://scripts/space3d/space_view3d.gd")
+const SkillSlot = preload("res://scripts/ui/skill_slot.gd")
+const SkillIcons = preload("res://scripts/ui/skill_icons.gd")
+const Models = preload("res://scripts/space3d/models.gd")
 var world: Node2D
 ## Quarter-view 3D renderer for the space operation; null elsewhere.
 var view3d: Node3D
@@ -357,30 +360,83 @@ func outfitter_panel() -> void:
 		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		b.add_theme_font_size_override("font_size",15)
 		slots.add_child(b)
-	var viewport = SubViewport.new()
-	viewport.size = Vector2i(450,150)
-	viewport.transparent_bg = true
-	viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
-	var preview = SubViewportContainer.new()
-	preview.custom_minimum_size = Vector2(450,150)
-	preview.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	preview.add_child(viewport)
-	panel_body.add_child(preview)
-	var ship_preview = Ship.new()
-	ship_preview.position = Vector2(225,77)
-	ship_preview.scale = Vector2(1.8,1.8)
-	ship_preview.rotation = PI*0.5
-	ship_preview.modules = Game.s.equipped.duplicate()
-	viewport.add_child(ship_preview)
+	panel_body.add_child(hangar_preview())
 	for id in BHCatalog.MODULES:
 		var data: Dictionary = BHCatalog.MODULES[id]
-		var content = UI.card(panel_body,data.name+"  ·  전력 "+str(data.power),data.text)
+		var row = HBoxContainer.new()
+		var framed = PanelContainer.new()
+		framed.add_theme_stylebox_override("panel",UI.style(Color("e8e8dc"),Color("c6ccbf")))
+		panel_body.add_child(framed)
+		framed.add_child(row)
+		var icon = TextureRect.new()
+		icon.texture = SkillIcons.texture(id,128)
+		icon.custom_minimum_size = Vector2(76,76)
+		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		icon.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+		row.add_child(icon)
+		var content = VBoxContainer.new()
+		content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		row.add_child(content)
+		content.add_child(UI.label(data.name+"  ·  전력 "+str(data.power),21))
+		content.add_child(UI.label(data.text,17,UI.MUTED,true))
 		var mid: String = id
 		content.add_child(UI.label("에너지 %d / 발열 %d / 대기 %.1f초" % [data.energy,data.heat,data.cooldown],16,UI.MUTED))
 		if id in Game.s.owned:
 			content.add_child(UI.button("%d번 슬롯에 장착" % (slot+1),func():apply_result(Game.equip(mid,slot),"outfitter")))
 		else:
 			content.add_child(UI.button("구입 · %d Cr" % data.cost,func():apply_result(Game.buy_module(mid),"outfitter"),int(Game.s.credits)<int(data.cost)))
+
+## Turntable of the actual 3D courier with the currently fitted modules.
+func hangar_preview() -> Control:
+	var viewport = SubViewport.new()
+	viewport.size = Vector2i(488,230)
+	viewport.own_world_3d = true
+	viewport.msaa_3d = Viewport.MSAA_4X
+	viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	var frame = SubViewportContainer.new()
+	frame.custom_minimum_size = Vector2(488,230)
+	frame.stretch = true
+	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	frame.add_child(viewport)
+	var env = Environment.new()
+	env.background_mode = Environment.BG_COLOR
+	env.background_color = Color("17303b")
+	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+	env.ambient_light_color = Color("7890a0")
+	env.ambient_light_energy = 0.6
+	env.tonemap_mode = Environment.TONE_MAPPER_FILMIC
+	var world_env = WorldEnvironment.new()
+	world_env.environment = env
+	viewport.add_child(world_env)
+	var key = DirectionalLight3D.new()
+	key.light_color = Color(1.0,0.9,0.78)
+	key.light_energy = 1.4
+	key.rotation = Vector3(deg_to_rad(-45),deg_to_rad(35),0)
+	viewport.add_child(key)
+	var rim = DirectionalLight3D.new()
+	rim.light_color = Color(0.5,0.8,0.95)
+	rim.light_energy = 0.7
+	rim.rotation = Vector3(deg_to_rad(-20),deg_to_rad(-150),0)
+	viewport.add_child(rim)
+	var floor_ring = MeshInstance3D.new()
+	floor_ring.mesh = Models.torus(3.6,3.75,64)
+	floor_ring.material_override = Models.glow("hangar_ring",Color(0.55,0.85,0.8),0.35)
+	floor_ring.position = Vector3(0,-0.8,0)
+	viewport.add_child(floor_ring)
+	var ship3d = Models.player_ship(Game.s.equipped)
+	viewport.add_child(ship3d)
+	for child in ship3d.get_children():
+		if child.name.begins_with("Flame"):
+			child.scale = Vector3(1,0.35,1)
+			child.position.z = 2.8
+	var camera = Camera3D.new()
+	camera.fov = 32
+	camera.transform = Transform3D(Basis(),Vector3(0,4.6,9.2)).looking_at(Vector3(0,0,0.2),Vector3.UP)
+	viewport.add_child(camera)
+	var turn = ship3d.create_tween().set_loops()
+	turn.tween_property(ship3d,"rotation:y",TAU,14.0).from(0.0)
+	return frame
 
 func housing_panel() -> void:
 	para("쾌적도 %d / 40  ·  같은 종류의 효과는 가장 높은 것만 적용됩니다." % Game.comfort())
@@ -454,13 +510,30 @@ func enter_space() -> void:
 	toast(world.latest_radio,6.0)
 
 func build_combat_controls(commands: HBoxContainer) -> void:
+	# Floating action bar: four illustrated module slots centered above the command strip.
+	var action_bar = HBoxContainer.new()
+	action_bar.add_theme_constant_override("separation",14)
+	action_bar.position = Vector2(566,694)
+	action_bar.size = Vector2(468,110)
+	action_bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	hud.add_child(action_bar)
 	for i in range(4):
 		var index: int = i
-		var button = UI.button("",func():world.use_skill(index))
-		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		commands.add_child(button)
-		skill_buttons.append(button)
-	var interact_button = UI.button("E  상호작용",func():world.interact())
+		var column = VBoxContainer.new()
+		column.add_theme_constant_override("separation",3)
+		column.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		action_bar.add_child(column)
+		var slot_node = SkillSlot.new()
+		slot_node.setup(str(Game.s.equipped[i]),i+1)
+		slot_node.activated.connect(func():world.use_skill(index))
+		column.add_child(slot_node)
+		var caption = UI.label(BHCatalog.MODULES[Game.s.equipped[i]].name,13,Color("d9e3dc"))
+		caption.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		caption.custom_minimum_size.x = 106
+		column.add_child(caption)
+		skill_buttons.append(slot_node)
+	var interact_button = UI.button("E  상호작용 · 스캔 · 접현 · 회수",func():world.interact())
+	interact_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	interact_button.button_down.connect(func():Input.action_press("interact"))
 	interact_button.button_up.connect(func():Input.action_release("interact"))
 	commands.add_child(interact_button)
@@ -484,8 +557,9 @@ func build_combat_controls(commands: HBoxContainer) -> void:
 		column.add_child(bar)
 		bars[entry[0]] = {"bar":bar,"label":text,"name":entry[1]}
 	radio_label = UI.label("",17,UI.PAPER,true)
-	radio_label.position = Vector2(44,756)
-	radio_label.size = Vector2(1510,45)
+	radio_label.position = Vector2(40,712)
+	radio_label.size = Vector2(500,86)
+	radio_label.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
 	hud.add_child(radio_label)
 
 func on_operation_ended(success: bool, hull: float) -> void:
@@ -595,10 +669,7 @@ func _process(delta: float) -> void:
 			bars[key].label.text = bars[key].name+" %d" % world.get(key)
 		for i in range(skill_buttons.size()):
 			var id: String = Game.s.equipped[i]
-			var name: String = BHCatalog.MODULES[id].name
-			var cooldown: float = world.cooldowns[i]
-			skill_buttons[i].text = "%d   %s  %s" % [i+1,name,"%.1fs" % cooldown if cooldown>0 else "준비"]
-			skill_buttons[i].disabled = cooldown>0 or world.energy<float(BHCatalog.MODULES[id].energy) or is_instance_valid(panel)
+			skill_buttons[i].update_state(float(world.cooldowns[i]),world.energy,float(world.active.get(id,0.0)),is_instance_valid(panel))
 		if is_instance_valid(radio_label):
 			radio_label.text = world.latest_radio
 	if Game.persistence and not Game.last_storage_error.is_empty() and is_instance_valid(hint_label):
