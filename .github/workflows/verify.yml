@@ -1,0 +1,53 @@
+name: Godot verification
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Godot 4.7.2
+        shell: bash
+        run: |
+          mkdir -p .tools artifacts
+          curl --fail --location --retry 3 -o .tools/godot.zip https://github.com/godotengine/godot-builds/releases/download/4.7.2-stable/Godot_v4.7.2-stable_linux.x86_64.zip
+          unzip -q .tools/godot.zip -d .tools
+          mv .tools/Godot_v4.7.2-stable_linux.x86_64 .tools/godot
+          chmod +x .tools/godot
+          .tools/godot --version | tee artifacts/engine-version.txt
+      - name: Runtime for reproducible local verification
+        uses: actions/upload-artifact@v4
+        with:
+          name: godot-linux-runtime
+          path: .tools/godot
+          retention-days: 2
+      - name: Import and test
+        if: hashFiles('project.godot') != ''
+        shell: bash
+        run: |
+          set -o pipefail
+          .tools/godot --headless --editor --path . --quit 2>&1 | tee artifacts/import.log
+          if grep -E 'SCRIPT ERROR|Parse Error|Failed to load script' artifacts/import.log; then exit 1; fi
+          .tools/godot --headless --path . -- --self-test 2>&1 | tee artifacts/tests.log
+          if grep -E 'SCRIPT ERROR|Parse Error|TEST FAIL' artifacts/tests.log; then exit 1; fi
+      - name: Render playable scenes
+        if: hashFiles('project.godot') != ''
+        shell: bash
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq xvfb fonts-noto-cjk libgl1-mesa-dri
+          set -o pipefail
+          LIBGL_ALWAYS_SOFTWARE=1 xvfb-run -a .tools/godot --path . --audio-driver Dummy -- --capture-all 2>&1 | tee artifacts/capture.log
+          if grep -E 'SCRIPT ERROR|Parse Error|ERROR:' artifacts/capture.log; then exit 1; fi
+      - name: Verification evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bountyhaven-verification
+          path: artifacts/
+          retention-days: 14
