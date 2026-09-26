@@ -396,3 +396,49 @@ static func asteroid(radius: float, seed_value: int) -> MeshInstance3D:
 	m.metallic = 0.05
 	node.material_override = m
 	return node
+
+## Standing traffic gate: a vertical cream-and-rust ring the courier flies through,
+## with clamp blocks, a rust lintel and marker lamps. Opening faces local X.
+static func gate() -> Node3D:
+	var root = Node3D.new()
+	var frame = mat("gate_frame",CREAM_SHADE,0.0,0.6,0.3)
+	var rust = mat("gate_rust",RUST_DARK,0.0,0.7,0.3)
+	part(root,torus(7.2,8.2,48),frame,Vector3.ZERO,Vector3(0,0,PI*0.5))
+	part(root,torus(8.2,8.5,48),rust,Vector3(0.35,0,0),Vector3(0,0,PI*0.5))
+	for i in range(8):
+		var a: float = TAU*i/8.0
+		var at: Vector3 = Vector3(0,sin(a)*7.8,cos(a)*7.8)
+		part(root,box(Vector3(1.4,1.1,1.1)),rust if i%2==0 else mat("gate_steel",STEEL),at,Vector3(a,0,0))
+		part(root,sphere(0.22,8,4),mat("gate_lamp",Color("ff9a6a"),5.0),at+Vector3(0.8,0,0),Vector3.ZERO,Vector3.ONE,"Lamp%d" % i)
+	part(root,torus(6.4,6.6,48),glow("gate_field",Color(0.55,0.9,0.85),0.18),Vector3.ZERO,Vector3(0,0,PI*0.5),Vector3.ONE,"Field")
+	return root
+
+## Lane buoy: a squat float with a lamp; rows of them mark the survey route.
+static func buoy() -> Node3D:
+	var root = Node3D.new()
+	part(root,cyl(0.28,0.4,0.6,8),mat("buoy_body",STEEL),Vector3.ZERO)
+	part(root,cyl(0.42,0.42,0.12,8),mat("buoy_band",RUST),Vector3(0,0.05,0))
+	part(root,sphere(0.2,8,4),mat("buoy_lamp",Color("8fe0d4"),5.0),Vector3(0,0.45,0),Vector3.ZERO,Vector3.ONE,"Lamp")
+	part(root,sphere(0.7,8,4),glow("buoy_halo",Color(0.55,0.9,0.85),0.25),Vector3(0,0.45,0),Vector3.ZERO,Vector3.ONE,"Halo")
+	return root
+
+## Derelict freighter drifting below the flight plane: a broken hull in two pieces,
+## exposed ribs, a dead engine block and one blinking distress lamp.
+static func wreck(seed_value: int) -> Node3D:
+	var rng = RandomNumberGenerator.new()
+	rng.seed = seed_value
+	var root = Node3D.new()
+	var hull = mat("wreck_hull",Color("8c8676"),0.0,0.85,0.2)
+	var dark = mat("wreck_dark",Color("3b3f40"),0.0,0.9,0.2)
+	var rust = mat("wreck_rust",Color("7a4a33"),0.0,0.9,0.2)
+	part(root,box(Vector3(4.2,3.0,9.0)),hull,Vector3(0,0,-5.5),Vector3(0.05,0,0.08))
+	part(root,box(Vector3(3.2,0.4,7.5)),rust,Vector3(0,1.65,-5.0),Vector3(0.05,0,0.08))
+	part(root,box(Vector3(4.0,2.8,6.0)),hull,Vector3(0.8,-0.6,5.5),Vector3(-0.1,0.35,-0.2))
+	part(root,cyl(1.1,1.4,2.2,10),dark,Vector3(1.2,-0.8,9.2),Vector3(PI*0.5,0.35,0))
+	for i in range(5):
+		part(root,box(Vector3(4.4,0.25,0.25)),dark,Vector3(0,1.3,-0.8+i*0.9+rng.randf_range(-0.1,0.1)),Vector3(0,0,rng.randf_range(-0.3,0.3)))
+		part(root,box(Vector3(0.25,2.6,0.25)),dark,Vector3(-2.0+rng.randf()*0.2,0,-0.8+i*0.9),Vector3(0,0,rng.randf_range(-0.4,0.4)))
+	for i in range(6):
+		part(root,box(Vector3(rng.randf_range(0.4,1.2),0.15,rng.randf_range(0.4,1.2))),rust,Vector3(rng.randf_range(-4,4),rng.randf_range(-2,2),rng.randf_range(-3,3)),Vector3(rng.randf()*TAU,rng.randf()*TAU,0))
+	part(root,sphere(0.28,8,4),mat("wreck_lamp",Color("ff7a5a"),6.0),Vector3(-1.9,1.6,-9.4),Vector3.ZERO,Vector3.ONE,"Lamp")
+	return root

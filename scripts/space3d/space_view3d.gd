@@ -28,6 +28,18 @@ var relay_label: Label3D
 var pod_label: Label3D
 var bank: float = 0.0
 var font: Font
+## Follow camera: a lagging focus point that leads the ship's motion and pulls back with speed.
+var cam_focus: Vector2 = Vector2.INF
+var cam_zoom: float = 1.0
+## Backdrop layers. Far scenery drifts with the camera (feels immense); star, dust and
+## debris tiles repeat endlessly so there is always something streaming past.
+var far_layer: Node3D
+var tiled_layers: Array = []
+var grid_node: MeshInstance3D
+var gates: Array = []
+var buoys: Array = []
+var wrecks: Array = []
+var landmarks_built: bool = false
 const CAMERA_BASE = Vector3(0,41,29)
 const CAMERA_LOOK = Vector3(0,0,1.8)
 
@@ -134,20 +146,49 @@ func build_backdrop() -> void:
 	mm.transform_format = MultiMesh.TRANSFORM_3D
 	mm.use_colors = true
 	mm.mesh = quad
-	mm.instance_count = 900
-	for i in range(900):
+	mm.instance_count = 420
+	for i in range(420):
 		var depth: float = rng.randf_range(25,110)
-		var at = Vector3(rng.randf_range(-190,190),-depth,rng.randf_range(-200,90))
+		var at = Vector3(rng.randf_range(-100,100),-depth,rng.randf_range(-100,100))
 		var s: float = rng.randf_range(0.12,0.38)*(1.0+depth*0.01)
 		if rng.randf()<0.04:
 			s *= 2.2
 		mm.set_instance_transform(i,Transform3D(Basis().scaled(Vector3(s,s,s)),at))
 		var tint: Color = [Color(0.85,0.92,1.0),Color(1.0,0.9,0.78),Color(0.75,0.95,0.92)][i%3]
 		mm.set_instance_color(i,Color(tint,rng.randf_range(0.25,0.8)))
-	var stars = MultiMeshInstance3D.new()
-	stars.multimesh = mm
-	stars.material_override = star_mat
-	add_child(stars)
+	tiled_layers.append(tile_layer(func():
+		var node = MultiMeshInstance3D.new()
+		node.multimesh = mm
+		node.material_override = star_mat
+		return node,200.0))
+	# Near-plane space dust: tiny motes just above and below the flight plane. Being
+	# close to the camera they sweep past fastest and carry most of the sense of speed.
+	var dust_mm = MultiMesh.new()
+	dust_mm.transform_format = MultiMesh.TRANSFORM_3D
+	dust_mm.use_colors = true
+	dust_mm.mesh = quad
+	dust_mm.instance_count = 90
+	for i in range(90):
+		var at = Vector3(rng.randf_range(-50,50),rng.randf_range(-7,3),rng.randf_range(-50,50))
+		var s: float = rng.randf_range(0.05,0.13)
+		dust_mm.set_instance_transform(i,Transform3D(Basis().scaled(Vector3(s,s,s)),at))
+		dust_mm.set_instance_color(i,Color(0.8,0.92,0.9,rng.randf_range(0.25,0.6)))
+	tiled_layers.append(tile_layer(func():
+		var node = MultiMeshInstance3D.new()
+		node.multimesh = dust_mm
+		node.material_override = star_mat
+		return node,100.0))
+	# Distant debris on lower planes, repeating in tiles for depth everywhere on the map.
+	var debris = Node3D.new()
+	for i in range(7):
+		var far = Models.asteroid(rng.randf_range(0.6,2.4),900+i)
+		far.position = Vector3(rng.randf_range(-70,70),rng.randf_range(-24,-7),rng.randf_range(-70,70))
+		far.rotation = Vector3(rng.randf()*TAU,rng.randf()*TAU,0)
+		debris.add_child(far)
+	tiled_layers.append(tile_layer(func():return debris.duplicate(),140.0))
+	debris.free()
+	far_layer = Node3D.new()
+	add_child(far_layer)
 	# Nebula washes: large noise-textured sheets tinted teal, rose and amber.
 	for data in [[Vector3(-30,-38,-10),Color(0.28,0.62,0.66),90.0],[Vector3(40,-50,-50),Color(0.72,0.38,0.52),110.0],[Vector3(-60,-60,-80),Color(0.8,0.6,0.35),120.0],[Vector3(20,-32,30),Color(0.3,0.5,0.7),80.0]]:
 		var tex = NoiseTexture2D.new()
@@ -170,11 +211,11 @@ func build_backdrop() -> void:
 		sheet_mat.albedo_texture = tex
 		var plane = PlaneMesh.new()
 		plane.size = Vector2(data[2],data[2])
-		Models.part(self,plane,sheet_mat,data[0],Vector3(0,rng.randf()*TAU,0))
+		Models.part(far_layer,plane,sheet_mat,data[0],Vector3(0,rng.randf()*TAU,0))
 	# Gas giant with banded texture, atmosphere halo and a thin tilted ring.
 	planet = Node3D.new()
 	planet.position = Vector3(92,-70,-130)
-	add_child(planet)
+	far_layer.add_child(planet)
 	var bands = NoiseTexture2D.new()
 	var band_noise = FastNoiseLite.new()
 	band_noise.seed = 7
@@ -197,7 +238,7 @@ func build_backdrop() -> void:
 	# Derelict ring station turning slowly in the middle distance.
 	station = Node3D.new()
 	station.position = Vector3(-26,-34,-78)
-	add_child(station)
+	far_layer.add_child(station)
 	var hull = Models.mat("station",Color("8f9a96"),0.0,0.7,0.4)
 	Models.part(station,Models.torus(6.4,7.2,64),hull,Vector3.ZERO,Vector3.ZERO,Vector3(1,1.6,1))
 	Models.part(station,Models.cyl(0.9,0.9,4.0,12),Models.mat("station_core",Color("6f7a78")),Vector3.ZERO)
@@ -210,23 +251,74 @@ func build_backdrop() -> void:
 	# A faint tactical grid on the flight plane anchors depth and speed.
 	var grid = ImmediateMesh.new()
 	grid.surface_begin(Mesh.PRIMITIVE_LINES)
-	for x in range(-40,41,4):
-		grid.surface_set_color(Color(0.55,0.75,0.78,0.06 if x%12!=0 else 0.12))
-		grid.surface_add_vertex(Vector3(x,-0.6,-14))
-		grid.surface_add_vertex(Vector3(x,-0.6,14))
-	for z in range(-14,15,4):
-		grid.surface_set_color(Color(0.55,0.75,0.78,0.06))
-		grid.surface_add_vertex(Vector3(-40,-0.6,z))
-		grid.surface_add_vertex(Vector3(40,-0.6,z))
+	for x in range(-72,73,4):
+		grid.surface_set_color(Color(0.55,0.75,0.78,0.05 if x%12!=0 else 0.1))
+		grid.surface_add_vertex(Vector3(x,-0.6,-60))
+		grid.surface_add_vertex(Vector3(x,-0.6,36))
+	for z in range(-60,37,4):
+		grid.surface_set_color(Color(0.55,0.75,0.78,0.05 if z%12!=0 else 0.1))
+		grid.surface_add_vertex(Vector3(-72,-0.6,z))
+		grid.surface_add_vertex(Vector3(72,-0.6,z))
 	grid.surface_end()
 	var gm = StandardMaterial3D.new()
 	gm.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	gm.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	gm.vertex_color_use_as_albedo = true
-	var grid_node = MeshInstance3D.new()
+	grid_node = MeshInstance3D.new()
 	grid_node.mesh = grid
 	grid_node.material_override = gm
 	add_child(grid_node)
+
+## Nine copies of a layer around the camera; snapping the group by whole tiles keeps the
+## pattern seamless, so the layer never runs out however far the ship flies.
+func tile_layer(make: Callable, tile: float) -> Node3D:
+	var group = Node3D.new()
+	group.set_meta("tile",tile)
+	for i in range(-1,2):
+		for j in range(-1,2):
+			var node: Node3D = make.call()
+			node.position = Vector3(i*tile,0,j*tile)
+			group.add_child(node)
+	add_child(group)
+	return group
+
+## Fixed landmarks in the operation area: traffic gates on the survey lanes, rows of lane
+## buoys between signals, and derelicts drifting under the plane.
+func build_landmarks() -> void:
+	landmarks_built = true
+	for entry in BHSpace.GATES:
+		var g = Models.gate()
+		g.position = Fx.to3d(entry[0],0.0)
+		g.rotation.y = -float(entry[1])
+		add_child(g)
+		gates.append(g)
+	var route: Array = [sim.position_ship]
+	for marker in sim.markers:
+		route.append(marker.pos)
+	var index: int = 0
+	for leg in range(route.size()-1):
+		var a: Vector2 = route[leg]
+		var b: Vector2 = route[leg+1]
+		var side: Vector2 = (b-a).orthogonal().normalized()*150.0
+		var count: int = int(a.distance_to(b)/320.0)
+		for k in range(1,count):
+			var at: Vector2 = a.lerp(b,float(k)/count)
+			for sign in [-1.0,1.0]:
+				var buoy = Models.buoy()
+				buoy.position = Fx.to3d(at+side*sign,-0.9)
+				buoy.set_meta("order",index)
+				add_child(buoy)
+				buoys.append(buoy)
+			index += 1
+	for i in range(BHSpace.WRECKS.size()):
+		var w = Models.wreck(70+i)
+		w.position = Fx.to3d(BHSpace.WRECKS[i],-11.0-i*2.0)
+		w.rotation = Vector3(0.1*i,i*1.7,0.15)
+		add_child(w)
+		wrecks.append(w)
+
+func snap_camera() -> void:
+	cam_focus = Vector2.INF
 
 func mouse_to_sim() -> Vector2:
 	var mouse: Vector2 = get_viewport().get_mouse_position()
@@ -262,7 +354,10 @@ func _process(delta: float) -> void:
 		return
 	if not sim.simulation_paused:
 		clock += delta
-	sync_camera()
+	# The simulation lays out its signals in its own _ready, which runs after ours.
+	if not landmarks_built and sim.is_inside_tree():
+		build_landmarks()
+	sync_camera(delta)
 	sync_backdrop(delta)
 	sync_ship(delta)
 	sync_quarry()
@@ -274,13 +369,40 @@ func _process(delta: float) -> void:
 	sync_projectiles()
 	draw_overlay()
 
-func sync_camera() -> void:
-	var focus: Vector3 = Fx.to3d(sim.position_ship)*0.12
+func sync_camera(delta: float) -> void:
+	# Lead the ship along its velocity and aim so there is room to see what is coming.
+	var goal: Vector2 = sim.position_ship+sim.velocity_ship*0.45+sim.aim*60.0
+	if cam_focus==Vector2.INF or cam_focus.distance_to(goal)>1500.0:
+		cam_focus = goal
+	else:
+		cam_focus = cam_focus.lerp(goal,1.0-exp(-delta*2.8))
+	var speed_k: float = clampf((sim.velocity_ship.length()-200.0)/650.0,0.0,1.0)
+	cam_zoom = lerpf(cam_zoom,1.0+speed_k*0.3,1.0-exp(-delta*1.8))
+	camera.fov = 40.0+(cam_zoom-1.0)*16.0
+	var focus: Vector3 = Fx.to3d(cam_focus)
 	var shake: Vector3 = Vector3(randf_range(-1,1),randf_range(-1,1),randf_range(-1,1))*sim.shake*0.035
-	camera.position = CAMERA_BASE+Vector3(focus.x,0,focus.z)+shake
-	camera.look_at(CAMERA_LOOK+Vector3(focus.x,0,focus.z)+shake*0.5)
+	camera.position = focus+CAMERA_LOOK+(CAMERA_BASE-CAMERA_LOOK)*cam_zoom+shake
+	camera.look_at(focus+CAMERA_LOOK+shake*0.5)
 
 func sync_backdrop(delta: float) -> void:
+	var focus: Vector3 = Fx.to3d(cam_focus)
+	far_layer.position = Vector3(focus.x*0.88,0,focus.z*0.88)
+	for layer in tiled_layers:
+		var tile: float = layer.get_meta("tile")
+		layer.position = Vector3(roundf(focus.x/tile)*tile,0,roundf(focus.z/tile)*tile)
+	grid_node.position = Vector3(snappedf(focus.x,12.0),0,snappedf(focus.z,12.0))
+	for g in gates:
+		g.get_node("Field").rotation.y = clock*0.3
+		for i in range(8):
+			g.get_node("Lamp%d" % i).visible = fposmod(clock*1.2-i*0.125,1.0)<0.5
+	# Lane buoys pulse in a chase pattern that runs toward the next signal.
+	for b in buoys:
+		var on: bool = fposmod(clock*1.4-int(b.get_meta("order"))*0.12,1.0)<0.3
+		b.get_node("Lamp").visible = on
+		b.get_node("Halo").visible = on
+	for w in wrecks:
+		w.rotation.y += delta*0.01
+		w.get_node("Lamp").visible = fposmod(clock*0.7,1.0)<0.15
 	station.rotation.y += delta*0.06
 	for s in range(4):
 		station.get_node("Beacon%d" % s).visible = fposmod(clock*1.3+s*0.4,1.0)<0.55
@@ -295,11 +417,11 @@ func sync_ship(delta: float) -> void:
 	ship.position = Fx.to3d(sim.position_ship,0.0)+Vector3(0,sin(clock*1.6)*0.08,0)
 	var heading: Vector2 = sim.aim
 	var right: Vector2 = Vector2(-heading.y,heading.x)
-	var lateral: float = sim.velocity_ship.dot(right)/275.0
+	var lateral: float = sim.velocity_ship.dot(right)/BHSpace.CRUISE
 	bank = lerpf(bank,clampf(-lateral*0.55,-0.6,0.6),minf(1.0,delta*6.0))
 	ship.rotation = Vector3(0,atan2(-heading.x,-heading.y),bank)
 	set_hurt(ship,sim.ship.hurt)
-	var thrust: float = clampf(sim.velocity_ship.length()/275.0,0.0,2.4)
+	var thrust: float = clampf(sim.velocity_ship.length()/BHSpace.CRUISE,0.0,2.4)+(0.5 if sim.afterburner else 0.0)
 	for side in ["L","R"]:
 		var flame: Node3D = ship.get_node("Flame"+side)
 		var length: float = 0.25+thrust*0.75+sin(clock*40.0)*0.05

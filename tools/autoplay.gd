@@ -6,7 +6,7 @@ extends Node
 var main: Node
 var clock: float = 0.0
 var stage: String = "harbor"
-var shots: Array = [["autoplay_1_harbor",1.6],["autoplay_2_survey",6.0],["autoplay_3_pursuit",14.0],["autoplay_4_battle",21.0],["autoplay_5_battle",26.0]]
+var shots: Array = [["autoplay_1_harbor",1.6],["autoplay_2_cruise",4.2],["autoplay_3_survey",8.5],["autoplay_4_pursuit",15.0],["autoplay_5_battle",22.0]]
 var fired: bool = false
 
 func _process(delta: float) -> void:
@@ -36,10 +36,12 @@ func _process(delta: float) -> void:
 			if not marker.done:
 				goal = marker.pos
 				break
-		if world.position_ship.distance_to(goal)<60:
+		if world.position_ship.distance_to(goal)<70:
 			Input.action_press("interact")
 		else:
 			Input.action_release("interact")
+		# Look where the ship is going, like a pilot would.
+		aim_at(world.position_ship+world.position_ship.direction_to(goal)*300,false)
 	else:
 		Input.action_release("interact")
 		# Circle the quarry at a firing distance while suppressing its engine.
@@ -50,19 +52,31 @@ func _process(delta: float) -> void:
 			world.use_skill(1)
 			fired = true
 	steer(world.position_ship,goal)
+	# Long crossings on the afterburner; ease off near the objective.
+	if world.position_ship.distance_to(goal)>700 and world.energy>20:
+		Input.action_press("sprint")
+	else:
+		Input.action_release("sprint")
 	if shots.is_empty():
 		finish()
 
 func steer(from: Vector2, to: Vector2) -> void:
-	var d: Vector2 = to-from
+	# Counter-thrust against momentum so the ship settles on the goal instead of drifting past.
+	var d: Vector2 = (to-from)-main.world.velocity_ship*0.9
 	for pair in [["right",d.x>25],["left",d.x<-25],["down",d.y>25],["up",d.y<-25]]:
 		if pair[1]:
 			Input.action_press(pair[0])
 		else:
 			Input.action_release(pair[0])
 
-func aim_at(point: Vector2) -> void:
+func aim_at(world_point: Vector2, fire: bool = true) -> void:
+	# The follow camera moves, so project the world point to the screen first.
+	var point: Vector2 = world_point
+	if is_instance_valid(main.view3d):
+		point = main.view3d.camera.unproject_position(BHVfx3D.to3d(world_point))
 	get_viewport().warp_mouse(point)
+	if not fire:
+		return
 	var press = InputEventMouseButton.new()
 	press.button_index = MOUSE_BUTTON_LEFT
 	press.pressed = true

@@ -5,6 +5,7 @@ const Habitat = preload("res://scripts/world/habitat.gd")
 const Space = preload("res://scripts/space/space_world.gd")
 const Ship = preload("res://scripts/space/ship_visual.gd")
 const SpaceView = preload("res://scripts/space3d/space_view3d.gd")
+const NavOverlay = preload("res://scripts/ui/nav_overlay.gd")
 const SkillSlot = preload("res://scripts/ui/skill_slot.gd")
 const SkillIcons = preload("res://scripts/ui/skill_icons.gd")
 const Models = preload("res://scripts/space3d/models.gd")
@@ -180,7 +181,7 @@ func build_hud() -> void:
 	if screen=="cabin":
 		hint_label.text = "내 배에서 쉬어 갑니다.  가구 배치: 클릭 / R 회전 / 우클릭 선택 해제 / Delete 선택 가구 판매 / Esc 종료"
 	elif screen=="space":
-		hint_label.text = "WASD 이동  ·  마우스 조준 / 왼쪽 클릭 제압포  ·  1–4 장비  ·  E 스캔·접현·회수  ·  Esc 일시정지"
+		hint_label.text = "WASD 추진 · Shift 애프터버너  ·  마우스 조준 / 왼쪽 클릭 제압포  ·  1–4 장비  ·  E 스캔·접현·회수  ·  Esc 일시정지"
 	toast_box = panel_at(Rect2(345,714,910,76),Color(0.94,0.92,0.86,0.96))
 	toast_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	toast_label = UI.label("",18,UI.INK,true)
@@ -506,6 +507,11 @@ func enter_space() -> void:
 	add_child(view3d)
 	add_child(world)
 	build_hud()
+	var nav = NavOverlay.new()
+	nav.world = world
+	nav.view = view3d
+	hud.add_child(nav)
+	hud.move_child(nav,0)
 	refresh_status()
 	toast(world.latest_radio,6.0)
 

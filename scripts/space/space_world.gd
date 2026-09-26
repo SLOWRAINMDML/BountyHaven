@@ -63,6 +63,19 @@ var fx_timer: float = 0.0
 var ghost_timer: float = 0.0
 var shake: float = 0.0
 var rng = RandomNumberGenerator.new()
+## The operation area is several screens wide: the camera follows the ship through it.
+const WORLD = Rect2(-2400,-1800,6400,4600)
+const CRUISE: float = 380.0
+const AFTERBURN: float = 600.0
+const BOOST: float = 900.0
+var afterburner: bool = false
+## Decorative traffic gates and derelicts (rendered by the 3D view; rocks keep clear of them).
+const GATES: Array = [[Vector2(40,600),0.0],[Vector2(1050,45),-0.66],[Vector2(2350,394),0.86]]
+const WRECKS: Array = [Vector2(-650,-250),Vector2(1900,1950),Vector2(3500,250),Vector2(-1700,1500)]
+var pursuit_anchor = Vector2.ZERO
+var pursuit_clock: float = 0.0
+## Where the 2D fallback view is centred (the 3D view keeps its own follow camera).
+var camera_2d = Vector2(800,477)
 
 func _ready() -> void:
 	hunter = Game.active_hunter()
@@ -84,6 +97,27 @@ func _ready() -> void:
 	# Solid rocks give cover from both sides' fire. Kept clear of every objective route.
 	for data in [[Vector2(118,520),44],[Vector2(505,735),34],[Vector2(880,248),30],[Vector2(1480,760),55],[Vector2(1535,372),36],[Vector2(735,690),24],[Vector2(300,330),20]]:
 		asteroids.append(make_asteroid(data[0],float(data[1])))
+	markers = [{"pos":Vector2(1650,-420),"done":false},{"pos":Vector2(3000,1150),"done":false}]
+	if salvage:
+		markers.append({"pos":Vector2(-1100,1700),"done":false})
+	# Scattered asteroid fields make the long crossings between signals readable.
+	var keep_clear: Array = [position_ship,target_pos]
+	for gate in GATES:
+		keep_clear.append(gate[0])
+	for marker in markers:
+		keep_clear.append(marker.pos)
+	for field in [[Vector2(1000,-950),9],[Vector2(2350,250),8],[Vector2(-900,650),8],[Vector2(3350,-650),7],[Vector2(1250,1850),8],[Vector2(-1500,-800),7],[Vector2(2600,2200),6],[Vector2(-300,-1300),6]]:
+		for i in range(int(field[1])):
+			var at: Vector2 = field[0]+Vector2.from_angle(rng.randf()*TAU)*rng.randf_range(0,420)
+			var clear: bool = true
+			for spot in keep_clear:
+				if at.distance_to(spot)<260:
+					clear = false
+			for rock in asteroids:
+				if at.distance_to(rock.home)<float(rock.r)+130:
+					clear = false
+			if clear:
+				asteroids.append(make_asteroid(at,rng.randf_range(18,64)))
 	ship = Ship.new()
 	ship.modules = Game.s.equipped.duplicate()
 	ship.position = position_ship
@@ -109,9 +143,7 @@ func _ready() -> void:
 	for i in range(14):
 		var y: float = position_ship.y+rng.randf_range(-40,40)
 		vfx.emit("spark",Vector2(position_ship.x-rng.randf_range(20,180),y),Vector2(-rng.randf_range(600,1400),0),0.5,1,Color("cdeee6"),{"drag":2.5,"width":1.2})
-	markers = [{"pos":Vector2(645,395),"done":false},{"pos":Vector2(1105,600),"done":false}]
 	if salvage:
-		markers.append({"pos":Vector2(1250,350),"done":false})
 		say("구호 물자 3개를 회수합니다. 표식에 접근해 E를 누르십시오. 교전은 없습니다.")
 	else:
 		if bool(Game.s.mission.get("intel",false)):
@@ -158,7 +190,8 @@ func _physics_process(delta: float) -> void:
 	# Camera shake and ambient drift keep running briefly after the operation ends.
 	shake = maxf(0.0,shake-delta*28.0)
 	if not three_d:
-		position = Vector2(rng.randf_range(-1,1),rng.randf_range(-1,1))*shake
+		camera_2d = camera_2d.lerp(position_ship+velocity_ship*0.4,minf(1.0,delta*3.0))
+		position = Vector2(800,477)-camera_2d+Vector2(rng.randf_range(-1,1),rng.randf_range(-1,1))*shake
 	update_backdrop(delta)
 	if finished:
 		queue_redraw()
@@ -180,15 +213,27 @@ func _physics_process(delta: float) -> void:
 			aim = position_ship.direction_to(mouse)
 		if Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) and get_viewport().gui_get_hovered_control()==null:
 			shoot()
-	var speed: float = 670.0 if float(active.get("boost",0.0))>0.0 else 275.0
-	velocity_ship = velocity_ship.move_toward(direction*speed,delta*980.0)
+	# Inertial flight: thrust builds speed, releasing the keys lets the hull drift.
+	afterburner = controls_enabled and not direction.is_zero_approx() and Input.is_action_pressed("sprint") and energy>6.0
+	var speed: float = AFTERBURN if afterburner else CRUISE
+	if afterburner:
+		energy = maxf(0.0,energy-delta*24.0)
+		heat = minf(100.0,heat+delta*4.0)
+	if float(active.get("boost",0.0))>0.0:
+		speed = BOOST
+	var thrust_rate: float = 620.0 if not direction.is_zero_approx() else 210.0
+	velocity_ship = velocity_ship.move_toward(direction*speed,delta*thrust_rate)
 	position_ship += velocity_ship*delta
-	position_ship.x = clampf(position_ship.x,60,1540)
-	position_ship.y = clampf(position_ship.y,212,742)
+	var inner: Rect2 = WORLD.grow(-60)
+	if not inner.has_point(position_ship):
+		position_ship = position_ship.clamp(inner.position,inner.end)
+		velocity_ship *= 0.5
+		if fposmod(clock,3.0)<delta:
+			say("항로 경계입니다. 이 너머는 관제 구역 밖입니다.")
 	collide_ship_with_rocks()
 	ship.position = position_ship
 	ship.rotation = aim.angle()+PI*0.5
-	ship.thrust = velocity_ship.length()/275.0
+	ship.thrust = velocity_ship.length()/CRUISE
 	ship.active = active
 	if float(active.get("tether",0.0))>0.0 and position_ship.distance_to(target_pos)>520:
 		active.tether = 0.0
@@ -237,7 +282,13 @@ func emit_ambient_fx(delta: float) -> void:
 	fx_timer += delta
 	ghost_timer -= delta
 	# Twin engine wash from the actual engine positions on the rotated hull.
-	var thrust: float = velocity_ship.length()/275.0
+	var thrust: float = velocity_ship.length()/CRUISE
+	# Speed streaks: stationary space dust the hull tears past at high speed.
+	if velocity_ship.length()>CRUISE*1.05:
+		var dir: Vector2 = velocity_ship.normalized()
+		for n in range(2):
+			var at: Vector2 = position_ship+dir*rng.randf_range(80,700)+dir.orthogonal()*rng.randf_range(-520,520)
+			vfx.emit("spark",at,-velocity_ship*0.55,0.3,1.0,Color(0.78,0.93,0.9,0.55),{"drag":0.0,"h":rng.randf_range(-3.0,4.0)})
 	if thrust>0.05:
 		for x in [-11.0,11.0]:
 			var nozzle: Vector2 = position_ship+Vector2(x,34).rotated(ship.rotation)*ship.scale.x
@@ -287,8 +338,12 @@ func update_objective(delta: float) -> void:
 		scan_progress = 0.0
 	elif phase == "pursuit":
 		if engine>0:
-			var desired = Vector2(1070+sin(clock*0.35)*200,440+cos(clock*0.43)*125)
-			target_velocity = target_pos.direction_to(desired)*(35.0 if float(active.get("tether",0.0))>0 else 92.0)
+			pursuit_clock += delta
+			if pursuit_anchor==Vector2.ZERO:
+				pursuit_anchor = target_pos
+			var desired: Vector2 = pursuit_anchor+Vector2(sin(pursuit_clock*0.16)*900,sin(pursuit_clock*0.11+0.8)*560-sin(0.8)*560)
+			desired = desired.clamp(WORLD.position+Vector2(300,300),WORLD.end-Vector2(300,300))
+			target_velocity = target_pos.direction_to(desired)*(40.0 if float(active.get("tether",0.0))>0 else 125.0)
 			target_pos += target_velocity*delta
 			if float(active.get("tether",0.0))<=0.0:
 				pursuit_timer += delta
@@ -323,7 +378,8 @@ func update_objective(delta: float) -> void:
 		if hornet_timer<=0.0:
 			hornet_timer = 12.0
 			if hornets.size()<2:
-				spawn_hornet(Vector2(1560,rng.randf_range(260,700)))
+				var from: Vector2 = position_ship+Vector2.from_angle(rng.randf()*TAU)*900
+				spawn_hornet(from.clamp(WORLD.position+Vector2(80,80),WORLD.end-Vector2(80,80)))
 
 func interact() -> void:
 	if finished:
@@ -338,7 +394,7 @@ func interact() -> void:
 		phase = "boarding"
 		relay_pos = target_pos+Vector2(-67,-45)
 		relay_hp = 20.0 if hunter=="rio" else 32.0
-		spawn_enemy(Vector2(1350,310))
+		spawn_enemy(target_pos+Vector2(210,-115))
 		vfx.ring(target_pos,Color("c0a2b9"),120,0.6,2.0)
 		say("%s: 진입했어. 분홍색 보안 중계기를 쏴 줘! 이후 근처에서 회수를 엄호해!" % hunter_name())
 	elif phase == "extraction":
@@ -362,11 +418,16 @@ func complete_scan(marker: Dictionary) -> void:
 			finish(true)
 		else:
 			phase = "pursuit"
+			# The quarry breaks cover a short hop beyond the last signal.
+			var last: Vector2 = marker.pos
+			target_pos = last+last.direction_to(WORLD.get_center())*650
+			pursuit_anchor = target_pos
+			quarry.position = target_pos
 			quarry.show()
 			vfx.emit("bloom",target_pos,Vector2.ZERO,0.5,24,Color("efe2c2"),{"grow":150})
 			vfx.ring(target_pos,Color("d6b98b"),140,0.8,2.0)
-			spawn_enemy(Vector2(1160,285))
-			spawn_enemy(Vector2(1320,635))
+			spawn_enemy(target_pos+Vector2(20,-140))
+			spawn_enemy(target_pos+Vector2(180,210))
 			say("%s: 표적 발견! 제압포로 엔진을 멈춰 줘. 파괴가 아니라 생포야." % hunter_name())
 	else:
 		say("단서 %d / %d 확보. 다음 신호로 이동하십시오." % [scans,markers.size()])
@@ -418,8 +479,9 @@ func update_enemies(delta: float) -> void:
 		if float(enemy.stun)>0:
 			continue
 		var toward: Vector2 = enemy.pos.direction_to(position_ship)
-		if enemy.pos.distance_to(position_ship)>300:
-			enemy.pos += toward*45.0*delta
+		var gap: float = enemy.pos.distance_to(position_ship)
+		if gap>300:
+			enemy.pos += toward*(45.0 if gap<700 else 240.0)*delta
 		enemy.node.position = enemy.pos
 		enemy.node.rotation = toward.angle()+PI*0.5
 		enemy.node.thrust = 0.4
@@ -485,8 +547,7 @@ func update_hornets(delta: float) -> void:
 					h.timer = rng.randf_range(2.2,3.4)
 					h.angle = (h.pos-position_ship).angle()
 		h.pos += h.vel*delta
-		h.pos.x = clampf(h.pos.x,30,1570)
-		h.pos.y = clampf(h.pos.y,180,780)
+		h.pos = h.pos.clamp(WORLD.position,WORLD.end)
 		node.position = h.pos
 		node.charging = clampf(1.0-float(h.timer)/0.8,0.0,1.0) if h.state=="charge" else 0.0
 		node.dashing = h.state=="dash"
@@ -695,7 +756,7 @@ func use_skill(slot: int) -> bool:
 		"boost":
 			active[id] = 0.42
 			var direction: Vector2 = Input.get_vector("left","right","up","down")
-			velocity_ship = (aim if direction.is_zero_approx() else direction)*670
+			velocity_ship = (aim if direction.is_zero_approx() else direction)*BOOST
 			pulse(position_ship,Color("9cd6c6"),55)
 			vfx.ring(position_ship,Color("9cd6c6"),70,0.35,2.4)
 			vfx.burst(position_ship,Color("c9f1e6"),10,120,260,0.3,1.0,"spark",(-velocity_ship).angle(),1.2)
@@ -795,6 +856,9 @@ func objective() -> String:
 	return "귀환 준비"
 
 func draw_backdrop() -> void:
+	# Sky layers are painted in screen space; only the rocks below live in world space.
+	var so: Vector2 = camera_2d-Vector2(800,477)
+	draw_set_transform(so)
 	draw_rect(Rect2(-40,-40,1680,980),Color("142b38"))
 	var drift: Vector2 = position_ship-Vector2(800,480)
 	# Painted nebula washes in three pigments drift very slowly behind everything.
@@ -802,9 +866,9 @@ func draw_backdrop() -> void:
 	for w in washes:
 		for i in range(int(w[2])):
 			var c: Vector2 = w[0]+Vector2(i*float(w[3])-float(w[2])*float(w[3])*0.5,-sin(i*0.4+clock*0.03)*140)-drift*0.02
-			draw_set_transform(c,-0.3,Vector2(1,0.48))
+			draw_set_transform(so+c,-0.3,Vector2(1,0.48))
 			draw_circle(Vector2.ZERO,210,w[1])
-	draw_set_transform(Vector2.ZERO)
+	draw_set_transform(so)
 	for star in stars:
 		var factor: float = [0.015,0.04,0.08][int(star.depth)]
 		var p: Vector2 = star.pos-drift*factor
@@ -822,18 +886,18 @@ func draw_backdrop() -> void:
 	for band in range(5):
 		draw_arc(planet,188-band*9,2.3,3.6,32,Color(0.62,0.75,0.72,0.06),5,true)
 	draw_arc(planet,191,0,TAU,96,Color(0.57,0.72,0.70,0.35),1.2,true)
-	draw_set_transform(planet,-0.35,Vector2(1,0.2))
+	draw_set_transform(so+planet,-0.35,Vector2(1,0.2))
 	draw_arc(Vector2.ZERO,300,0.15,PI-0.15,64,Color(0.7,0.78,0.72,0.22),3,true)
-	draw_set_transform(Vector2.ZERO)
+	draw_set_transform(so)
 	# Derelict ring station: slowly turning spokes, blinking beacons.
 	var station: Vector2 = Vector2(960,168)-drift*0.02
-	draw_set_transform(station,0,Vector2(1,0.42))
+	draw_set_transform(so+station,0,Vector2(1,0.42))
 	draw_arc(Vector2.ZERO,92,0,TAU,64,Color(0.58,0.70,0.68,0.28),5,true)
 	draw_arc(Vector2.ZERO,84,0,TAU,64,Color(0.58,0.70,0.68,0.16),1,true)
 	for s in range(6):
 		var a: float = clock*0.08+s*TAU/6.0
 		draw_line(Vector2.ZERO,Vector2.from_angle(a)*88,Color(0.58,0.70,0.68,0.16),1.2,true)
-	draw_set_transform(Vector2.ZERO)
+	draw_set_transform(so)
 	draw_rect(Rect2(station-Vector2(9,26),Vector2(18,52)),Color(0.35,0.47,0.50,0.5))
 	draw_rect(Rect2(station-Vector2(9,26),Vector2(18,52)),Color(0.58,0.70,0.68,0.35),false,1.0)
 	for b in [Vector2(-92,0),Vector2(92,0),Vector2(0,-26)]:
@@ -841,10 +905,10 @@ func draw_backdrop() -> void:
 		draw_circle(station+b*Vector2(1,0.42 if b.y==0 else 1.0),2.2,Color(0.94,0.66,0.5,0.25+0.6*on))
 	for rock in far_rocks:
 		var p2: Vector2 = rock.pos-drift*0.03
-		draw_set_transform(p2,rock.rot,Vector2(1,0.7))
+		draw_set_transform(so+p2,rock.rot,Vector2(1,0.7))
 		draw_circle(Vector2.ZERO,rock.r,Color(0.30,0.40,0.42,0.55))
 		draw_arc(Vector2.ZERO,rock.r,-2.2,0.2,12,Color(0.55,0.65,0.62,0.4),0.8,true)
-	draw_set_transform(Vector2.ZERO)
+	draw_set_transform(so)
 	for x in range(0,1600,100):
 		draw_line(Vector2(x,210),Vector2(x,757),Color(0.55,0.67,0.66,0.03),0.7)
 	for y in range(230,758,100):
@@ -852,6 +916,7 @@ func draw_backdrop() -> void:
 	var streak: Vector2 = -velocity_ship*0.05
 	for mote in dust:
 		draw_line(mote.pos,mote.pos+streak,Color(0.78,0.86,0.82,float(mote.alpha)),1.0 if streak.length()>2 else 1.6,true)
+	draw_set_transform(Vector2.ZERO)
 	for rock in asteroids:
 		draw_asteroid(rock)
 

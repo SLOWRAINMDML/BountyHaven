@@ -324,6 +324,17 @@ func hazard_tests() -> void:
 		battle._physics_process(1.0/60.0)
 	check(not battle.hornets.is_empty() and battle.hornets.size()<=2,"raider drones arrive during a live pursuit and stay capped")
 	check(battle.mines.size()<=4 and battle.vfx.parts.size()<=BHVfx.LIMIT,"hazards and particles stay bounded over 15 simulated seconds")
+	# Inertial flight: with no thrust the hull keeps drifting instead of stopping dead.
+	battle.position_ship = Vector2(0,-1200)
+	battle.velocity_ship = Vector2(BHSpace.CRUISE,0)
+	for i in range(30):
+		battle._physics_process(1.0/60.0)
+	check(battle.velocity_ship.length()>250.0 and battle.position_ship.x>150.0,"released controls leave the ship drifting on momentum")
+	battle.position_ship = BHSpace.WORLD.end+Vector2(500,500)
+	battle._physics_process(1.0/60.0)
+	check(BHSpace.WORLD.has_point(battle.position_ship),"ship stays inside the operation area boundary")
+	var spread: float = battle.markers[0].pos.distance_to(battle.markers[1].pos)
+	check(BHSpace.WORLD.size.x>=1600*3 and spread>1200.0 and battle.asteroids.size()>20,"operation area spans several screens with distant signals and asteroid fields")
 	battle.queue_free()
 	await get_tree().process_frame
 	Game.reset(false)
@@ -368,6 +379,18 @@ func view3d_tests() -> void:
 	battle.damage_hornet(0,5.0)
 	view._process(1.0/60.0)
 	check(view.drones.is_empty(),"destroyed raider model is removed from the 3D scene")
+	# Wide operation area: the follow camera and endless backdrop travel with the ship.
+	battle.position_ship = Vector2(3200,1900)
+	battle.velocity_ship = Vector2.ZERO
+	for i in range(3):
+		view._process(1.0/60.0)
+	var focus3: Vector3 = BHVfx3D.to3d(battle.position_ship)
+	check(absf(view.camera.position.x-focus3.x)<6.0 and view.camera.position.z>focus3.z,"follow camera tracks the ship across the operation area")
+	var tiles_ok: bool = true
+	for layer in view.tiled_layers:
+		if absf(layer.position.x-focus3.x)>float(layer.get_meta("tile")):
+			tiles_ok = false
+	check(tiles_ok and view.gates.size()==BHSpace.GATES.size() and not view.buoys.is_empty(),"star and dust tiles follow the camera and lane landmarks exist")
 	battle.queue_free()
 	view.queue_free()
 	await get_tree().process_frame
