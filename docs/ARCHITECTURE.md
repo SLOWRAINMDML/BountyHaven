@@ -15,6 +15,9 @@
 - `scripts/fx/vfx.gd`: pooled cosmetic particle layer (blooms, sparks, shards, smoke, rings, bolts, beams, afterimages, damage numbers, hit flash, vignette). Bounded at 1400 particles; gameplay never reads it.
 - `scripts/world/ambient.gd`: cosmetic harbor/cabin life (birds, motes, water glints, steam, bunting, footsteps, click ripples, window stars).
 - `scripts/world/port_prop.gd`: y-sorted harbor props placed outside the walk polygon, so navigation is unchanged.
+- `scripts/space3d/space_view3d.gd`: quarter-view 3D renderer for BHSpace (camera, lights, backdrop, model sync, flat-plane indicators). Reads simulation state only; supplies mouse-to-plane aiming.
+- `scripts/space3d/models.gd`: procedural low-poly models; all face -Z so one yaw formula orients them.
+- `scripts/space3d/fx3d.gd`: BHVfx3D, the 3D implementation of the BHVfx call surface (MultiMesh particle pools, rings, ribbons, Label3D numbers).
 - `tools/autoplay.gd`: `--autoplay` real-time input-driven smoke run.
 - `scripts/core/sound.gd`: original cached PCM sound effects, bounded voice pool.
 - `tests/test_runner.gd`: in-engine isolated deterministic domain/combat/navigation tests.

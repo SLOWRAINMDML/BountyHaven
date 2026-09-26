@@ -24,6 +24,7 @@ func run() -> void:
 	save_tests()
 	await combat_tests()
 	await hazard_tests()
+	await view3d_tests()
 	await navigation_tests()
 	for suffix in ["",".tmp",".bak"]:
 		if FileAccess.file_exists(Game.storage_path+suffix):
@@ -336,6 +337,39 @@ func hazard_tests() -> void:
 		battle._physics_process(1.0/60.0)
 	check(battle.hornets.is_empty() and battle.mines.is_empty(),"noncombat salvage never spawns raiders or mines")
 	battle.queue_free()
+	await get_tree().process_frame
+
+func view3d_tests() -> void:
+	# The quarter-view renderer mirrors simulation state without owning any of it.
+	Game.reset(false)
+	Game.accept("mechanic","pilot")
+	Game.launch()
+	var battle = BHSpace.new()
+	battle.three_d = true
+	var view = load("res://scripts/space3d/space_view3d.gd").new()
+	view.sim = battle
+	add_child(view)
+	add_child(battle)
+	battle.set_physics_process(false)
+	battle.controls_enabled = false
+	check(battle.vfx is BHVfx3D and battle.ship.modulate.a==0.0,"3D mode swaps in the 3D effect layer and hides 2D sprites")
+	for marker in battle.markers:
+		battle.complete_scan(marker)
+	battle.drop_mine()
+	battle.spawn_hornet(Vector2(900,400))
+	battle.vfx.explosion(Vector2(800,477),1.0)
+	for i in range(3):
+		view._process(1.0/60.0)
+	check(view.escorts.size()==battle.enemies.size() and view.drones.size()==1 and view.mine_nodes.size()==1,"3D view mirrors escorts, raider drones and mines")
+	check(view.quarry.visible and view.ship.visible and view.rocks.size()==battle.asteroids.size(),"3D view shows the revealed quarry, player ship and cover rocks")
+	var probe: Vector3 = BHVfx3D.to3d(Vector2(1200,300))
+	check(is_equal_approx(probe.x,20.0) and is_equal_approx(probe.z,-8.85),"simulation pixels map onto the 3D flight plane")
+	battle.hornets[0].hp = 1.0
+	battle.damage_hornet(0,5.0)
+	view._process(1.0/60.0)
+	check(view.drones.is_empty(),"destroyed raider model is removed from the 3D scene")
+	battle.queue_free()
+	view.queue_free()
 	await get_tree().process_frame
 
 func navigation_tests() -> void:

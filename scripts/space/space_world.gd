@@ -11,7 +11,12 @@ var simulation_paused: bool = false
 var phase: String = "survey"
 var ship: BHShipVisual
 var quarry: BHShipVisual
-var vfx: BHVfx
+## BHVfx (2D) or BHVfx3D; both share one call surface.
+var vfx
+## Quarter-view 3D presentation: 2D visuals turn invisible and a BHSpaceView3D renders.
+var three_d: bool = false
+var mouse_provider: Callable
+var next_mine_id: int = 1
 var position_ship = Vector2(320,610)
 var velocity_ship = Vector2.ZERO
 var aim = Vector2.RIGHT
@@ -92,9 +97,13 @@ func _ready() -> void:
 	quarry.scale = Vector2(1.5,1.5)
 	quarry.hide()
 	add_child(quarry)
-	vfx = Vfx.new()
-	vfx.z_index = 20
-	add_child(vfx)
+	if vfx==null:
+		vfx = Vfx.new()
+		vfx.z_index = 20
+		add_child(vfx)
+	if three_d:
+		for node in [ship,quarry]:
+			node.modulate = Color(1,1,1,0)
 	# Warp arrival: a flash and trailing speed lines behind the hull.
 	vfx.emit("bloom",position_ship,Vector2.ZERO,0.5,20,Color("bfe8dd"),{"grow":140})
 	for i in range(14):
@@ -148,7 +157,8 @@ func _physics_process(delta: float) -> void:
 		return
 	# Camera shake and ambient drift keep running briefly after the operation ends.
 	shake = maxf(0.0,shake-delta*28.0)
-	position = Vector2(rng.randf_range(-1,1),rng.randf_range(-1,1))*shake
+	if not three_d:
+		position = Vector2(rng.randf_range(-1,1),rng.randf_range(-1,1))*shake
 	update_backdrop(delta)
 	if finished:
 		queue_redraw()
@@ -165,7 +175,7 @@ func _physics_process(delta: float) -> void:
 	var direction = Vector2.ZERO
 	if controls_enabled:
 		direction = Input.get_vector("left","right","up","down")
-		var mouse: Vector2 = get_local_mouse_position()
+		var mouse: Vector2 = mouse_provider.call() if three_d and mouse_provider.is_valid() else get_local_mouse_position()
 		if position_ship.distance_to(mouse)>5.0:
 			aim = position_ship.direction_to(mouse)
 		if Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) and get_viewport().gui_get_hovered_control()==null:
@@ -234,8 +244,7 @@ func emit_ambient_fx(delta: float) -> void:
 			vfx.emit("dot",nozzle,-velocity_ship*0.2+Vector2(rng.randf_range(-12,12),rng.randf_range(-12,12)),0.35,2.2+thrust*1.4,Color(0.55,0.85,0.8,0.55),{"drag":3.0})
 	if float(active.get("boost",0.0))>0.0 and ghost_timer<=0.0:
 		ghost_timer = 0.035
-		vfx.emit("ghost",position_ship,Vector2.ZERO,0.32,ship.scale.x,Color(0.66,0.93,0.86,0.8),{"spin":0.0})
-		vfx.parts[-1].rot = ship.rotation
+		vfx.afterimage(position_ship,ship.rotation,ship.scale.x,Color(0.66,0.93,0.86,0.8))
 	if fx_timer<0.06:
 		return
 	fx_timer = 0.0
@@ -377,6 +386,8 @@ func spawn_enemy(pos: Vector2) -> void:
 	visual.modules = ["rail"]
 	visual.position = pos
 	visual.scale = Vector2(0.9,0.9)
+	if three_d:
+		visual.modulate = Color(1,1,1,0)
 	add_child(visual)
 	warp_in(pos,Color("e3a986"))
 	enemies.append({"node":visual,"pos":pos,"hp":40.0,"timer":1.7+enemies.size()*0.7,"warning":false,"aim":Vector2.LEFT,"stun":0.0,"age":0.0})
@@ -385,6 +396,8 @@ func spawn_hornet(pos: Vector2) -> void:
 	var visual = Hornet.new()
 	visual.position = pos
 	visual.scale = Vector2(1.5,1.5)
+	if three_d:
+		visual.modulate = Color(1,1,1,0)
 	add_child(visual)
 	warp_in(pos,Color("f0b28c"))
 	hornets.append({"node":visual,"pos":pos,"vel":Vector2(-160,0),"hp":16.0,"state":"orbit","timer":rng.randf_range(1.6,2.6),"angle":rng.randf()*TAU,"turn":1.0 if rng.randf()>0.5 else -1.0,"dir":Vector2.LEFT,"stun":0.0})
@@ -394,7 +407,8 @@ func drop_mine() -> void:
 	if mines.size()>=4:
 		return
 	var back: Vector2 = -target_velocity.normalized() if target_velocity.length()>1 else Vector2.LEFT
-	mines.append({"pos":target_pos+back*52,"vel":back*55,"arm":1.2,"fuse":-1.0,"hp":8.0,"clock":0.0})
+	next_mine_id += 1
+	mines.append({"id":next_mine_id,"pos":target_pos+back*52,"vel":back*55,"arm":1.2,"fuse":-1.0,"hp":8.0,"clock":0.0})
 	vfx.ring(target_pos+back*52,Color("d19375"),30,0.4,1.4)
 
 func update_enemies(delta: float) -> void:
@@ -858,6 +872,9 @@ func draw_asteroid(rock: Dictionary) -> void:
 	draw_set_transform(Vector2.ZERO)
 
 func _draw() -> void:
+	if three_d:
+		draw_screen_overlay()
+		return
 	draw_backdrop()
 	if phase=="survey":
 		for i in range(markers.size()):
@@ -965,3 +982,20 @@ func _draw() -> void:
 		draw_line(cursor+Vector2(-16,0),cursor+Vector2(-8,0),Color("aecdc3"),1,true)
 		draw_line(cursor+Vector2(8,0),cursor+Vector2(16,0),Color("aecdc3"),1,true)
 		draw_circle(cursor,1.5,Color("d8ece4"))
+
+## 3D mode: the world renders in BHSpaceView3D; only screen-space aim and hit feedback stay 2D.
+func draw_screen_overlay() -> void:
+	if float(vfx.vignette)>0.01:
+		for i in range(6):
+			var inset: float = 22.0*i
+			draw_rect(Rect2(Vector2(inset,86+inset),Vector2(1600-inset*2,720-inset*2)),Color(vfx.vignette_color,vfx.vignette*0.09*(6-i)/6.0),false,24.0)
+	if float(vfx.flash)>0.01:
+		draw_rect(Rect2(0,86,1600,720),Color(vfx.flash_color,vfx.flash*0.2))
+	var cursor: Vector2 = get_local_mouse_position()
+	if cursor.y>95 and cursor.y<800:
+		var spin: float = clock*1.5
+		draw_arc(cursor,11,spin,spin+PI*0.6,12,Color(0.8,0.95,0.9,0.9),1.4,true)
+		draw_arc(cursor,11,spin+PI,spin+PI*1.6,12,Color(0.8,0.95,0.9,0.9),1.4,true)
+		draw_line(cursor+Vector2(-18,0),cursor+Vector2(-8,0),Color("cfeee6"),1.2,true)
+		draw_line(cursor+Vector2(8,0),cursor+Vector2(18,0),Color("cfeee6"),1.2,true)
+		draw_circle(cursor,1.6,Color("e8f6f1"))

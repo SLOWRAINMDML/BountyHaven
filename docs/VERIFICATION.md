@@ -9,7 +9,7 @@ godot --headless --path . --audio-driver Dummy -- --self-test
 godot --path . --audio-driver Dummy -- --capture-all
 ```
 
-The initial local verification was performed with `Godot 4.7.2.stable.official.ed1daf0bf` on Linux. The deterministic suite contains **122 checks** covering transactions, corrupted save rejection/recovery, navigation, actual combat nodes, and the raider drone / mine / asteroid hazards (including a 15-second simulated pursuit that checks hazard and particle counts stay bounded). Consult the latest `artifacts/test-results.json` rather than treating this document as proof that a later revision passed.
+The initial local verification was performed with `Godot 4.7.2.stable.official.ed1daf0bf` on Linux. The deterministic suite contains **127 checks** covering transactions, corrupted save rejection/recovery, navigation, actual combat nodes, and the raider drone / mine / asteroid hazards (including a 15-second simulated pursuit that checks hazard and particle counts stay bounded), and the 3D view mirroring simulation state. Consult the latest `artifacts/test-results.json` rather than treating this document as proof that a later revision passed.
 
 Capture mode produces six actual Godot viewport PNGs: the harbor, contract panel, furnished interior, module screen, pursuit and boarding. Capture mode deliberately stages sample states; these are engine-rendered screenshots, not evidence of an entire human playthrough. The headless suite separately exercises pursuit/boarding/extraction transitions and collision.
 

@@ -85,6 +85,10 @@ func bolt(a: Vector2, b: Vector2, color: Color, life: float = 0.22) -> void:
 func beam(a: Vector2, b: Vector2, color: Color, width: float, life: float) -> void:
 	emit("beam",a,Vector2.ZERO,life,width,color,{"end":b})
 
+func afterimage(pos: Vector2, rot: float, scale_value: float, color: Color) -> void:
+	emit("ghost",pos,Vector2.ZERO,0.32,scale_value,color,{"spin":0.0})
+	parts[-1].rot = rot
+
 func hit_flash(color: Color, amount: float) -> void:
 	flash_color = color
 	flash = maxf(flash,amount)

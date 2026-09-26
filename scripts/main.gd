@@ -4,7 +4,10 @@ const UI = preload("res://scripts/ui/palette.gd")
 const Habitat = preload("res://scripts/world/habitat.gd")
 const Space = preload("res://scripts/space/space_world.gd")
 const Ship = preload("res://scripts/space/ship_visual.gd")
+const SpaceView = preload("res://scripts/space3d/space_view3d.gd")
 var world: Node2D
+## Quarter-view 3D renderer for the space operation; null elsewhere.
+var view3d: Node3D
 var canvas: CanvasLayer
 var hud: Control
 var panel: PanelContainer
@@ -76,6 +79,10 @@ func clear_world() -> void:
 		remove_child(world)
 		world.queue_free()
 	world = null
+	if is_instance_valid(view3d):
+		remove_child(view3d)
+		view3d.queue_free()
+	view3d = null
 	if is_instance_valid(hud):
 		canvas.remove_child(hud)
 		hud.queue_free()
@@ -436,7 +443,11 @@ func enter_space() -> void:
 	screen = "space"
 	end_pending = false
 	world = Space.new()
+	world.three_d = true
 	world.ended.connect(on_operation_ended)
+	view3d = SpaceView.new()
+	view3d.sim = world
+	add_child(view3d)
 	add_child(world)
 	build_hud()
 	refresh_status()
