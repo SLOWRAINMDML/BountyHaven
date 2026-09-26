@@ -1,0 +1,38 @@
+{
+  "schema": "slowrain.bountyhaven.art-direction/2",
+  "revision": "main-art-v2",
+  "master_reference": 1,
+  "source_inventory": "docs/art/source_inventory.tsv",
+  "source_policy": "verified_original_png_required",
+  "prototype_art_is_canon": false,
+  "missing_source_behavior": "stop_no_style_substitution",
+  "source_originals_uploaded_by_this_change": false,
+  "references": [
+    {"order":1,"id":"bh_ref_01_rust_harbor_v01","tier":"primary","role":"master_visual_language"},
+    {"order":2,"id":"bh_ref_02_salty_keg_v01","tier":"secondary","role":"place_support"},
+    {"order":3,"id":"bh_ref_03_guild_hall_v01","tier":"support","role":"content_only"},
+    {"order":4,"id":"bh_ref_04_living_deck_v01","tier":"primary","role":"interior_living"},
+    {"order":5,"id":"bh_ref_05_captains_cabin_v01","tier":"secondary","role":"place_support"},
+    {"order":6,"id":"bh_ref_06_engineering_bay_v01","tier":"secondary","role":"place_support"},
+    {"order":7,"id":"bh_ref_07_pursuit_zone_v01","tier":"primary","role":"ship_and_space_not_camera"},
+    {"order":8,"id":"bh_ref_08_boarding_support_v01","tier":"support","role":"content_only"},
+    {"order":9,"id":"bh_ref_09_glasswind_outpost_v01","tier":"secondary","role":"place_support"},
+    {"order":10,"id":"bh_ref_10_bounty_results_v01","tier":"support","role":"content_only"},
+    {"order":11,"id":"bh_ref_11_starmap_table_v01","tier":"primary","role":"navigation_room"},
+    {"order":12,"id":"bh_ref_12_pilot_application_v01","tier":"support","role":"content_only"},
+    {"order":13,"id":"bh_ref_13_crew_manifest_v01","tier":"support","role":"content_only"},
+    {"order":14,"id":"bh_ref_14_secure_detention_v01","tier":"support","role":"content_only"},
+    {"order":15,"id":"bh_ref_15_med_bay_v01","tier":"support","role":"content_only"},
+    {"order":16,"id":"bh_ref_16_decor_catalog_v01","tier":"support","role":"content_only"},
+    {"order":17,"id":"bh_ref_17_moonwake_relay_v01","tier":"primary","role":"night_and_rain"},
+    {"order":18,"id":"bh_ref_18_frostline_anchorage_v01","tier":"primary","role":"winter"},
+    {"order":19,"id":"bh_ref_19_crash_site_v01","tier":"support","role":"content_only"},
+    {"order":20,"id":"bh_ref_20_title_screen_v01","tier":"primary","role":"brand_composition"}
+  ],
+  "recipes": {
+    "harbor":[1], "interior":[1,4,5], "tavern":[1,4,2], "engineering":[1,7,6],
+    "space":[1,7,6], "navigation":[1,4,11], "night_port":[1,17], "winter_port":[1,18],
+    "desert_outpost":[1,9], "title":[1,20], "crew":[1,4,13], "detention":[1,4,14],
+    "medbay":[1,4,15], "housing":[1,4,16], "investigation":[1,9,19]
+  }
+}

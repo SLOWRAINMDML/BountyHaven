@@ -1,7 +1,9 @@
-# 원본 이미지의 GitHub 전송 상태
+# 아트 전달 상태 · main-art-v2
 
-**현재 준비 커밋: 메타데이터와 활용 도구만 반영. 이미지 바이너리는 아직 전송되지 않음.**
+이 커밋이 반영하는 것은 **공식 스타일 가이드, 에이전트 진입점, 장면별 참조 계약, 원본 복구·검사 도구**입니다.
 
-전체 원본 20장, 파생 미리보기 40개, 이전 엔진 캡처 7개는 별도로 전달된 `BountyHaven_ArtLibrary_20_Images.zip`에 들어 있습니다. ZIP의 `tools/publish_art_library.py --push`를 로컬에서 실행하면 모든 파일을 체크섬 검증하고 지정 저장소 `main`에 일반 push로 반영합니다. 성공 시 이 상태 문서도 갱신됩니다.
+현재 확인한 기존 main에는 원본 PNG 20장과 전체 갤러리 파일이 없습니다. 이번 지침 정리도 그 바이너리를 원격에 올렸다는 주장이 아닙니다. 원본은 사용자에게 전달한 `BountyHaven_ArtLibrary_20_Images.zip` 및 `BountyHaven_ArtLibrary_MainReset_v1.zip`에 들어 있습니다.
 
-목록 파일 또는 이 문서의 존재를 이미지 업로드 완료 증거로 쓰지 마십시오.
+새 에이전트는 `python tools/art_direction.py --archive <ZIP> --scene harbor`로 원본만 검증 복구한 뒤 작업합니다. 옛 지침·프로젝트 파일·게시 스크립트를 통째로 덮어쓰지 않습니다. 이 importer는 미리보기/옛 갤러리 전체가 아니라 PNG 원본만 설치합니다.
+
+실제 가용 상태는 `python tools/art_direction.py --check-config` 출력의 `source_files_present`와 `generation_ready`, 그리고 장면별 파일 검사로 확인합니다. 설정 검사의 성공은 원본 전송이나 신규 게임 화면 완성의 증거가 아닙니다.

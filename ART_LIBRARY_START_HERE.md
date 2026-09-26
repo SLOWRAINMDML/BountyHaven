@@ -1,32 +1,32 @@
-# BountyHaven 아트 라이브러리
+# BountyHaven — 신규 아트 시작점
 
-이전 10장과 후속 10장, 총 20장의 생성형 목표 화면을 게임 제작 자료로 정리했습니다.
+**정식 시각 기준은 사용자가 승인한 생성 이미지 20장입니다. 초기 SVG 실행 화면은 최종 그림체가 아닙니다.**
 
-## 현재 저장소 상태
+[정식 스타일 가이드](docs/art/CANONICAL_STYLE_GUIDE.md) → [기계가 읽는 기준·장면 조합](art/canonical/style_contract.json) → [신규 생성 프롬프트](docs/art/PROMPTS.md) → [다음 에이전트 작업](docs/art/NEXT_AGENT_HANDOFF.md)
 
-이 준비 커밋에는 **원본 목록·SHA-256·활용 지침·Godot 참고 뷰어·검증 및 업로드 도구**가 포함됩니다. **PNG/JPEG 바이너리와 전체 매니페스트·브라우저 갤러리는 아직 전송되지 않았습니다.** 목록을 실제 이미지 업로드 완료로 취급하지 마십시오. [전송 상태](art/reference/UPLOAD_STATUS.md)를 확인하십시오.
+루트 `AGENTS.md`와 `CLAUDE.md`도 같은 기준을 가리킵니다. 과거 README의 '아트 구현' 설명은 현재 프로토타입 기술 설명이며 신규 원화의 목표 품질이나 화풍 기준이 아닙니다.
 
-원본 20장과 초기 엔진 캡처 7개를 모두 포함한 완전한 패키지는 대화에서 전달한 `BountyHaven_ArtLibrary_20_Images.zip`입니다. 원본은 1672×941 PNG이며 손대지 않고 보존했습니다.
+## 무엇이 기준인가
 
-## 패키지 실행
+01 녹슨 항구가 공통 그림체의 최상위 기준입니다. 04 실내, 07 함선/전투, 11 항로실, 17 야간, 18 설원, 20 브랜드 장면은 해당 상황의 1차 보조 기준입니다. 모든 화면을 무작정 합성하지 않습니다. 임시 문구·가격·이름은 공식 설정이 아닙니다.
 
-압축을 푼 폴더에서 `art/reference/index.html`을 열면 브라우저 갤러리를 볼 수 있습니다. ZIP의 루트 `project.godot`는 독립 아트 뷰어용으로, 기존 게임의 `project.godot`에 덮어쓰면 안 됩니다.
-
-전체 패키지를 기존 게임에 반영한 뒤에는 `tools/art_gallery.tscn`을 열고 F6으로 확인합니다. 이 뷰어는 저장 데이터와 게임 시스템을 수정하지 않습니다.
-
-## 원본까지 GitHub에 게시
-
-Python 3.10 이상, Git, 기존 GitHub 로그인이 준비된 로컬 환경에서 완전한 ZIP을 압축 해제하고 실행하십시오.
+## 실제 파일 확인
 
 ```sh
-python tools/validate_art_library.py
-python tools/publish_art_library.py --push
+python tools/art_direction.py --check-config
+python tools/art_direction.py --scene harbor
 ```
 
-업로드 도구는 `https://github.com/SLOWRAINMDML/BountyHaven.git`의 `main`을 임시 작업 폴더로 clone하고 아트 관련 경로만 복사합니다. 기존 게임 코드·세이브·프로젝트 설정을 변경하거나 강제 push하지 않습니다. 성공한 경우 실제 원격 HEAD를 확인한 `publish_receipt.json`이 남습니다. `--push`를 빼면 변경 미리보기만 합니다.
+첫 명령은 문서·설정 연결만 검사합니다. 두 번째 명령은 생성에 필요한 **실제 PNG의 SHA-256·크기·해상도**를 검사하고, 없으면 종료 코드 2로 중단합니다. 파일명이 적혀 있는 것만으로 이미지를 본 것으로 취급하지 않습니다.
 
-## 활용
+이 변경은 스타일 기준/인수인계/검사 도구를 main에 반영하는 작업입니다. 원본 PNG 20장의 원격 전송, 신규 원화 생성, 게임 화면 교체를 완료했다는 뜻이 아닙니다. 정확한 상태는 [전송 상태](art/reference/UPLOAD_STATUS.md)와 실제 파일 검사로 확인합니다.
 
-[장면 목록](art/reference/README.md) · [제작·조립 기준](docs/art/ASSET_HANDOFF.md) · [제작용 프롬프트](docs/art/PROMPTS.md) · [원본 체크섬](docs/art/source_inventory.tsv)
+## 원본이 다른 작업 환경에 없을 때
 
-20장은 완성 화면 형태의 시안입니다. UI·인물·가구가 그림에 포함되어 있으며, 아직 clean plate·투명 소품·캐릭터 파츠로 분리되지 않았습니다. 시안과 현재 엔진의 실제 화면을 혼동하지 않습니다.
+대화에 전달된 `BountyHaven_ArtLibrary_MainReset_v1.zip` 또는 `BountyHaven_ArtLibrary_20_Images.zip`을 사용합니다.
+
+```sh
+python tools/art_direction.py --archive /path/to/BountyHaven_ArtLibrary_MainReset_v1.zip --scene harbor
+```
+
+새 importer는 검증된 원본 PNG 20개만 설치합니다. ZIP의 옛 지침이나 `project.godot`는 복사하지 않으므로 새 main 지침/게임 설정을 덮어쓰지 않습니다. 원본 외 미리보기·옛 갤러리의 전체 설치 상태는 별도입니다. 종전 `publish_art_library.py`나 ZIP 전체 덮어쓰기로 이번 지침을 과거 버전으로 되돌리지 마십시오.

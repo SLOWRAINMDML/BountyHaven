@@ -1,0 +1,27 @@
+name: Art direction contract
+on:
+  push:
+    paths:
+      - AGENTS.md
+      - CLAUDE.md
+      - ART_LIBRARY_START_HERE.md
+      - docs/ART_DIRECTION.md
+      - docs/art/**
+      - art/canonical/**
+      - tools/art_direction.py
+      - tools/test_art_direction.py
+      - .github/workflows/art-direction.yml
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate guidance only - not image availability
+        run: python3 tools/art_direction.py --check-config
+      - name: Exercise missing and corrupt reference gates
+        run: python3 -m unittest discover -s tools -p 'test_art_direction.py' -v
