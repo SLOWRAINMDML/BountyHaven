@@ -11,6 +11,11 @@
 - `scripts/world/furniture.gd`: functional furniture visual, ghost and placement dimensions.
 - `scripts/space/space_world.gd`: live ship movement, telegraphed enemy shots, swept projectile collision, abilities, boarding support and extraction.
 - `scripts/space/ship_visual.gd`: persistent ship silhouette and four hardpoints; equipped IDs also determine activation animation.
+- `scripts/space/hornet_visual.gd`: raider drone silhouette with charge/dash states.
+- `scripts/fx/vfx.gd`: pooled cosmetic particle layer (blooms, sparks, shards, smoke, rings, bolts, beams, afterimages, damage numbers, hit flash, vignette). Bounded at 1400 particles; gameplay never reads it.
+- `scripts/world/ambient.gd`: cosmetic harbor/cabin life (birds, motes, water glints, steam, bunting, footsteps, click ripples, window stars).
+- `scripts/world/port_prop.gd`: y-sorted harbor props placed outside the walk polygon, so navigation is unchanged.
+- `tools/autoplay.gd`: `--autoplay` real-time input-driven smoke run.
 - `scripts/core/sound.gd`: original cached PCM sound effects, bounded voice pool.
 - `tests/test_runner.gd`: in-engine isolated deterministic domain/combat/navigation tests.
 
@@ -28,7 +33,7 @@ The pilot remains the spaceship owner. Pilot employment temporarily supplies the
 
 Basic shots are nonlethal engine suppression against the bounty target. They can destroy escort craft and boarding relays. The hunter boards only after engine zero and valid proximity. Relay destruction is an actual projectile collision, not a timed dialogue. Progress then requires maintaining the support radius, and extraction requires a separate proximity interaction at the pod.
 
-There are at most three live escorts. Each enemy snapshots its aim, displays a 1.15 s warning and then fires. Projectile tests use swept segments rather than point samples. A directional shield rejects only incoming projectiles in its forward 140° sector. Active modules consume energy, heat and cooldown only after target/phase/resource validation.
+There are at most three live escorts. Raider drones (≤2) arrive every 12 s during pursuit/boarding; they orbit, telegraph for 0.8 s, then dash for contact damage that the directional shield can block. The fleeing quarry drops proximity mines (≤4) every 7.5 s while its engine runs; armed mines start a 0.55 s fuse near the ship, can be shot, chain-detonate, and are fizzled by EMP. Seven asteroids absorb projectiles from both sides and push the ship out on contact. Salvage contracts spawn none of these. Each enemy snapshots its aim, displays a 1.15 s warning and then fires. Projectile tests use swept segments rather than point samples. A directional shield rejects only incoming projectiles in its forward 140° sector. Active modules consume energy, heat and cooldown only after target/phase/resource validation.
 
 ## Housing contract
 

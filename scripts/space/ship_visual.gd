@@ -8,6 +8,8 @@ var thrust: float = 0.0
 var active: Dictionary = {}
 var clock: float = 0.0
 var disabled: bool = false
+## Brief pale flash when struck; decays on its own.
+var hurt: float = 0.0
 const INK = Color("354f5a")
 
 func poly(points: PackedVector2Array, color: Color, width: float = 1.0) -> void:
@@ -18,13 +20,22 @@ func poly(points: PackedVector2Array, color: Color, width: float = 1.0) -> void:
 
 func _process(delta: float) -> void:
 	clock += delta
+	hurt = maxf(0.0,hurt-delta*5.0)
 	queue_redraw()
 
 func _draw() -> void:
 	var flame: Color = Color("d59e78") if hostile else Color("79bfba")
+	var base_color: Color = hull_color
+	hull_color = base_color.lerp(Color("fbf3df"),hurt*0.8)
+	draw_hull(flame)
+	hull_color = base_color
+
+func draw_hull(flame: Color) -> void:
 	if thrust>0.05 and not disabled:
+		draw_circle(Vector2(0,34),14+thrust*6,Color(flame,0.10))
 		for x in [-11,11]:
 			var tail: float = 12+thrust*23+sin(clock*25)*3
+			draw_line(Vector2(x,30),Vector2(x,tail+20),Color(1,0.98,0.9,0.55),1.6,true)
 			poly(PackedVector2Array([Vector2(x-4,29),Vector2(x,tail+27),Vector2(x+4,29)]),Color(flame,0.6),0.6)
 			draw_circle(Vector2(x,30),6,Color(flame,0.16))
 	# Broad split cargo hull and small central cockpit preserve a recognizable silhouette.

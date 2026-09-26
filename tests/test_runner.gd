@@ -23,6 +23,7 @@ func run() -> void:
 	module_tests()
 	save_tests()
 	await combat_tests()
+	await hazard_tests()
 	await navigation_tests()
 	for suffix in ["",".tmp",".bak"]:
 		if FileAccess.file_exists(Game.storage_path+suffix):
@@ -270,6 +271,70 @@ func combat_tests() -> void:
 	for marker in battle.markers:
 		battle.complete_scan(marker)
 	check(battle.finished and battle.enemies.is_empty(),"all recovery crates complete a noncombat mission")
+	battle.queue_free()
+	await get_tree().process_frame
+
+func hazard_tests() -> void:
+	# Raider drones, mines, asteroid cover and VFX run through the real combat node.
+	Game.reset(false)
+	Game.accept("mechanic","pilot")
+	Game.launch()
+	var battle = BHSpace.new()
+	add_child(battle)
+	battle.set_physics_process(false)
+	battle.controls_enabled = false
+	for marker in battle.markers:
+		battle.complete_scan(marker)
+	check(battle.hornets.is_empty() and battle.mines.is_empty(),"pursuit starts without extra hazards")
+	var rock: Dictionary = battle.asteroids[0]
+	battle.projectiles = [{"pos":rock.pos-Vector2(float(rock.r)+60,0),"vel":Vector2(900,0),"life":1.0,"enemy":true,"damage":12.0}]
+	battle.update_projectiles(0.2)
+	check(battle.projectiles.is_empty() and battle.hull==100,"asteroid absorbs fire as cover")
+	battle.spawn_hornet(battle.position_ship+Vector2(120,0))
+	var drone: Dictionary = battle.hornets[0]
+	drone.state = "dash"
+	drone.timer = 0.5
+	drone.dir = Vector2.LEFT
+	drone.vel = Vector2(-780,0)
+	battle.armor = 0
+	battle.update_hornets(0.12)
+	battle.update_hornets(0.01)
+	check(battle.hull==90 and drone.state=="recover","raider dash deals contact damage once")
+	battle.projectiles = [{"pos":drone.pos-Vector2(60,0),"vel":Vector2(800,0),"life":1.0,"enemy":false,"damage":20.0}]
+	battle.update_projectiles(0.15)
+	check(battle.hornets.is_empty(),"raider drone destroyed by suppression fire")
+	battle.drop_mine()
+	check(battle.mines.size()==1,"quarry drops a proximity mine")
+	battle.mines[0].pos = battle.position_ship+Vector2(60,0)
+	battle.mines[0].arm = 0.0
+	battle.update_mines(0.1)
+	check(float(battle.mines[0].fuse)>0,"armed mine starts a visible fuse near the ship")
+	battle.update_mines(0.6)
+	check(battle.mines.is_empty() and battle.hull==76,"mine detonates and damages the ship in radius")
+	battle.drop_mine()
+	battle.mines[0].pos = battle.position_ship+Vector2(150,0)
+	battle.cooldowns = [0.0,0.0,0.0,0.0]
+	battle.energy = 100
+	battle.heat = 0
+	var emp_slot: int = Game.s.equipped.find("emp")
+	check(emp_slot>=0 and battle.use_skill(emp_slot) and battle.mines.is_empty(),"EMP fizzles nearby mines safely")
+	battle.hull = 1000000.0
+	for i in range(900):
+		battle._physics_process(1.0/60.0)
+	check(not battle.hornets.is_empty() and battle.hornets.size()<=2,"raider drones arrive during a live pursuit and stay capped")
+	check(battle.mines.size()<=4 and battle.vfx.parts.size()<=BHVfx.LIMIT,"hazards and particles stay bounded over 15 simulated seconds")
+	battle.queue_free()
+	await get_tree().process_frame
+	Game.reset(false)
+	Game.accept("salvage","pilot")
+	Game.launch()
+	battle = BHSpace.new()
+	add_child(battle)
+	battle.set_physics_process(false)
+	battle.controls_enabled = false
+	for i in range(900):
+		battle._physics_process(1.0/60.0)
+	check(battle.hornets.is_empty() and battle.mines.is_empty(),"noncombat salvage never spawns raiders or mines")
 	battle.queue_free()
 	await get_tree().process_frame
 

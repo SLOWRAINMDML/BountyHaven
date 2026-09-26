@@ -29,7 +29,7 @@ jobs:
           if grep -E 'SCRIPT ERROR|Parse Error|Failed to load script' artifacts/import.log; then exit 1; fi
           .tools/godot --headless --path . --audio-driver Dummy -- --self-test 2>&1 | tee artifacts/tests.log
           if grep -E 'SCRIPT ERROR|Parse Error|TEST FAIL' artifacts/tests.log; then exit 1; fi
-          python3 -c "import json; d=json.load(open('artifacts/test-results.json')); assert d['failed']==0 and d['passed']>=111"
+          python3 -c "import json; d=json.load(open('artifacts/test-results.json')); assert d['failed']==0 and d['passed']>=122"
       - name: Render playable scenes
         shell: bash
         run: |

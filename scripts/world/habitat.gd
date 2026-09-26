@@ -3,6 +3,8 @@ extends Node2D
 const Ink = preload("res://scripts/world/ink_art.gd")
 const Walker = preload("res://scripts/world/walker.gd")
 const Decor = preload("res://scripts/world/furniture.gd")
+const Ambient = preload("res://scripts/world/ambient.gd")
+const Prop = preload("res://scripts/world/port_prop.gd")
 const GRID_ORIGIN = Vector2(260,486)
 const CELL: float = 60.0
 const NAV_CELL: float = 20.0
@@ -28,6 +30,10 @@ var ghost: BHDecor
 var build_mode: bool = false
 var nearest: String = ""
 var font: Font
+var ambient: BHAmbient
+## Distance walked since the last dust puff, per actor.
+var stride_left: Dictionary = {}
+var last_pos: Dictionary = {}
 
 func _ready() -> void:
 	font = SystemFont.new()
@@ -72,6 +78,18 @@ func _ready() -> void:
 	people.y_sort_enabled = true
 	people.z_index = 2
 	add_child(people)
+	ambient = Ambient.new()
+	ambient.place_kind = place_kind
+	ambient.z_index = 1
+	add_child(ambient)
+	if place_kind == "port":
+		for data in [["crates",Vector2(520,641)],["cat",Vector2(512,595)],["board",Vector2(606,618)],["barrels",Vector2(1246,640)],["plant",Vector2(1046,621)],["plant",Vector2(760,612)],["bollard",Vector2(256,760)],["bollard",Vector2(374,701)]]:
+			var prop = Prop.new()
+			prop.kind = data[0]
+			prop.position = data[1]
+			if data[0]=="cat":
+				prop.z_index = 1
+			people.add_child(prop)
 	player = Walker.new()
 	player.is_player = true
 	player.position = Vector2(748,752) if place_kind == "port" else Vector2(753,645)
@@ -237,6 +255,7 @@ func _unhandled_input(event: InputEvent) -> void:
 				go_to(kind)
 				return
 		route(player,pos)
+		ambient.ripple(nav.get_point_position(closest_cell(pos)))
 
 func _physics_process(delta: float) -> void:
 	if controls_enabled and not build_mode:
@@ -244,7 +263,7 @@ func _physics_process(delta: float) -> void:
 		if input.length() > 0.0:
 			player.path.clear()
 			queued_interaction = ""
-			var movement: Vector2 = input*160.0*delta
+			var movement: Vector2 = input*(265.0 if Input.is_action_pressed("sprint") else 160.0)*delta
 			var before: Vector2 = player.position
 			if is_walkable(player.position+Vector2(movement.x,0)):
 				player.position.x += movement.x
@@ -264,6 +283,8 @@ func _physics_process(delta: float) -> void:
 		interaction.emit(action)
 	for npc in npcs:
 		advance(npc,delta,55.0)
+	for actor in [player]+npcs:
+		track_steps(actor)
 	nearest = ""
 	var distance: float = 85.0
 	for kind in hotspots:
@@ -271,6 +292,15 @@ func _physics_process(delta: float) -> void:
 		if d < distance:
 			distance = d
 			nearest = kind
+
+func track_steps(actor: BHWalker) -> void:
+	var id: int = actor.get_instance_id()
+	var previous: Vector2 = last_pos.get(id,actor.position)
+	last_pos[id] = actor.position
+	stride_left[id] = float(stride_left.get(id,0.0))+previous.distance_to(actor.position)
+	if float(stride_left[id])>26.0:
+		stride_left[id] = 0.0
+		ambient.footstep(actor.position,Color(0.72,0.66,0.55) if place_kind=="port" else Color(0.80,0.76,0.66))
 
 func advance(actor: BHWalker, delta: float, speed: float) -> void:
 	actor.moving = not actor.path.is_empty()

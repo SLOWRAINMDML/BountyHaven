@@ -31,7 +31,7 @@ var current_report: Dictionary = {}
 func _ready() -> void:
 	bind_inputs()
 	var args: PackedStringArray = OS.get_cmdline_user_args()
-	Game.persistence = not ("--self-test" in args or "--capture-all" in args)
+	Game.persistence = not ("--self-test" in args or "--capture-all" in args or "--autoplay" in args)
 	Game.reset(false)
 	if "--self-test" in args:
 		Sfx.enabled = false
@@ -40,7 +40,7 @@ func _ready() -> void:
 		runner.run.call_deferred()
 		return
 	capture_mode = "--capture-all" in args
-	if not capture_mode:
+	if not capture_mode and Game.persistence:
 		Game.load_game()
 	canvas = CanvasLayer.new()
 	add_child(canvas)
@@ -49,13 +49,18 @@ func _ready() -> void:
 	if capture_mode:
 		Sfx.enabled = false
 		capture_all.call_deferred()
+	elif "--autoplay" in args:
+		Sfx.enabled = false
+		var driver = load("res://tools/autoplay.gd").new()
+		driver.main = self
+		add_child(driver)
 	else:
 		toast("작은 배, 커다란 여행. 길드에서 파일럿 모집에 지원하거나 술집에서 동료를 만나 보세요.",9.0)
 		if not Game.last_storage_error.is_empty():
 			toast(Game.last_storage_error,10.0)
 
 func bind_inputs() -> void:
-	var map: Dictionary = {"left":[KEY_A,KEY_LEFT],"right":[KEY_D,KEY_RIGHT],"up":[KEY_W,KEY_UP],"down":[KEY_S,KEY_DOWN],"interact":[KEY_E],"rotate":[KEY_R],"skill_1":[KEY_1],"skill_2":[KEY_2],"skill_3":[KEY_3],"skill_4":[KEY_4],"save":[KEY_F5],"delete_furniture":[KEY_DELETE]}
+	var map: Dictionary = {"left":[KEY_A,KEY_LEFT],"right":[KEY_D,KEY_RIGHT],"up":[KEY_W,KEY_UP],"down":[KEY_S,KEY_DOWN],"interact":[KEY_E],"rotate":[KEY_R],"skill_1":[KEY_1],"skill_2":[KEY_2],"skill_3":[KEY_3],"skill_4":[KEY_4],"save":[KEY_F5],"delete_furniture":[KEY_DELETE],"sprint":[KEY_SHIFT]}
 	for action in map:
 		if not InputMap.has_action(action):
 			InputMap.add_action(action)
@@ -161,7 +166,7 @@ func build_hud() -> void:
 		commands.add_child(UI.button("항구로",func():show_habitat("port")))
 	hint_label = UI.label("",14,UI.MUTED)
 	stack.add_child(hint_label)
-	hint_label.text = "WASD / 방향키 또는 바닥 클릭: 이동     E: 가까운 곳 조사     아래 버튼: 해당 장소로 걸어가기     Esc: 메뉴"
+	hint_label.text = "WASD / 방향키 또는 바닥 클릭: 이동     Shift: 달리기     E: 가까운 곳 조사     아래 버튼: 해당 장소로 걸어가기     Esc: 메뉴"
 	if screen=="cabin":
 		hint_label.text = "내 배에서 쉬어 갑니다.  가구 배치: 클릭 / R 회전 / 우클릭 선택 해제 / Delete 선택 가구 판매 / Esc 종료"
 	elif screen=="space":
@@ -476,6 +481,9 @@ func on_operation_ended(success: bool, hull: float) -> void:
 	if end_pending:
 		return
 	end_pending = true
+	if not capture_mode:
+		# Let the final explosion or extraction flash play before returning to the ship.
+		await get_tree().create_timer(1.4).timeout
 	settle_operation.call_deferred(success,hull)
 
 func settle_operation(success: bool, hull: float) -> void:
@@ -518,7 +526,7 @@ func journal_panel() -> void:
 
 func menu_panel() -> void:
 	para("우주에서는 이 메뉴를 열면 전투가 일시정지됩니다. Esc로 돌아가세요.")
-	para("이동 WASD / 방향키 · 조사 E\n사격 마우스 · 장비 1–4\n가구 회전 R · 선택 가구 판매 Delete",18,UI.INK)
+	para("이동 WASD / 방향키 · 달리기 Shift · 조사 E\n사격 마우스 · 장비 1–4\n가구 회전 R · 선택 가구 판매 Delete",18,UI.INK)
 	panel_body.add_child(UI.button("효과음: "+("켜짐" if Sfx.enabled else "꺼짐"),func():Sfx.enabled=not Sfx.enabled;open_panel("menu")))
 	if screen=="space":
 		panel_body.add_child(UI.button("긴급 철수 · 이번 계약 보수 포기",func():close_panel();world.finish(false)))
@@ -633,6 +641,29 @@ func capture_all() -> void:
 	world.active = {"shield":2.0,"tether":3.0}
 	world.ship.active = world.active
 	world.engine = 63
+	# Stage a live skirmish: a charging raider drone, an armed mine, crossfire and a fresh explosion.
+	world.spawn_hornet(Vector2(900,650))
+	world.hornets[0].state = "charge"
+	world.hornets[0].timer = 0.25
+	world.hornets[0].dir = Vector2(900,650).direction_to(world.position_ship)
+	world.hornets[0].node.rotation = world.hornets[0].dir.angle()+PI*0.5
+	world.hornets[0].node.charging = 0.7
+	world.mines.append({"pos":Vector2(930,470),"vel":Vector2.ZERO,"arm":0.0,"fuse":-1.0,"hp":8.0,"clock":0.3})
+	world.velocity_ship = Vector2(240,-60)
+	for i in range(3):
+		world.projectiles.append({"pos":world.position_ship+world.aim*(90+i*95),"vel":world.aim*810.0,"life":1.0,"enemy":false,"damage":8.0})
+	world.projectiles.append({"pos":Vector2(1000,300),"vel":Vector2(-280,120),"life":1.0,"enemy":true,"damage":12.0})
+	world.vfx.frozen = false
+	for n in range(30):
+		world.emit_ambient_fx(0.07)
+		world.vfx._process(0.03)
+	world.vfx.explosion(Vector2(1240,640),1.0)
+	world.vfx.muzzle(world.position_ship+world.aim*45,world.aim.angle(),Color("bfe6db"))
+	world.damage_engine(8)
+	for n in range(8):
+		world.emit_ambient_fx(0.07)
+		world.vfx._process(0.02)
+	world.vfx.frozen = true
 	world.queue_redraw()
 	await capture("05_pursuit")
 	world.phase = "boarding"
@@ -641,6 +672,19 @@ func capture_all() -> void:
 	world.latest_radio = "바스: 진입했어. 분홍색 중계기를 쏴 줘! 이후 근처에서 엄호해!"
 	world.active = {}
 	world.ship.active = {}
+	world.aim = world.position_ship.direction_to(world.relay_pos)
+	world.ship.rotation = world.aim.angle()+PI*0.5
+	world.mines.clear()
+	world.vfx.frozen = false
+	for n in range(40):
+		world.vfx._process(0.03)
+	world.vfx.beam(world.position_ship+world.aim*40,world.position_ship+world.aim*1200,Color("e8d4a4"),5.0,0.35)
+	world.vfx.explosion(Vector2(1320,330),0.8,Color("e59a70"))
+	world.damage_relay(8)
+	for n in range(6):
+		world.emit_ambient_fx(0.07)
+		world.vfx._process(0.02)
+	world.vfx.frozen = true
 	world.queue_redraw()
 	await capture("06_boarding")
 	print("CAPTURE COMPLETE: 6 real Godot viewport renders; isolated in-memory state.")
