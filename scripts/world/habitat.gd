@@ -2,6 +2,7 @@ class_name BHHabitat
 extends Node2D
 const Ink = preload("res://scripts/world/ink_art.gd")
 const Walker = preload("res://scripts/world/walker.gd")
+const PaperDoll = preload("res://scripts/world/paper_doll.gd")
 const Decor = preload("res://scripts/world/furniture.gd")
 const Ambient = preload("res://scripts/world/ambient.gd")
 const Prop = preload("res://scripts/world/port_prop.gd")
@@ -90,7 +91,7 @@ func _ready() -> void:
 			if data[0]=="cat":
 				prop.z_index = 1
 			people.add_child(prop)
-	player = Walker.new()
+	player = PaperDoll.new()
 	player.is_player = true
 	player.position = Vector2(748,752) if place_kind == "port" else Vector2(753,645)
 	people.add_child(player)
@@ -116,6 +117,8 @@ func spawn_npcs() -> void:
 		npcs.append(npc)
 
 func on_state_changed() -> void:
+	if player is BHPaperDoll and player.look != Game.s.get("look",{}):
+		player.apply_look(Game.s.get("look",BHAppearance.defaults()))
 	if place_kind == "cabin":
 		var id: String = Game.active_hunter()
 		if (npcs.is_empty() and not id.is_empty()) or (not npcs.is_empty() and npcs[0].role_id != id):

@@ -1,0 +1,358 @@
+{
+ "version": 1,
+ "units": "sheet_px",
+ "origin": "ground between feet",
+ "nodes": [
+  {
+   "name": "hips",
+   "part": "pelvis_front",
+   "region": null,
+   "joint": [
+    0,
+    -372
+   ],
+   "pivot": [
+    60,
+    10
+   ],
+   "parent": "",
+   "z": 30,
+   "scale_x": 1.0
+  },
+  {
+   "name": "cloak",
+   "part": "cloak_c",
+   "region": null,
+   "joint": [
+    44,
+    -508
+   ],
+   "pivot": [
+    52,
+    8
+   ],
+   "parent": "chest",
+   "z": 0,
+   "scale_x": 1.0
+  },
+  {
+   "name": "thigh_l",
+   "part": "thigh_l",
+   "region": null,
+   "joint": [
+    -30,
+    -340
+   ],
+   "pivot": [
+    35,
+    14
+   ],
+   "parent": "hips",
+   "z": 22,
+   "scale_x": 1.18
+  },
+  {
+   "name": "shin_l",
+   "part": "shin_l",
+   "region": null,
+   "joint": [
+    -31,
+    -196
+   ],
+   "pivot": [
+    28,
+    10
+   ],
+   "parent": "thigh_l",
+   "z": 20,
+   "scale_x": 1.15
+  },
+  {
+   "name": "boot_l",
+   "part": "boot_l",
+   "region": null,
+   "joint": [
+    -34,
+    -92
+   ],
+   "pivot": [
+    38,
+    12
+   ],
+   "parent": "shin_l",
+   "z": 24,
+   "scale_x": 1.0
+  },
+  {
+   "name": "thigh_r",
+   "part": "thigh_r",
+   "region": null,
+   "joint": [
+    30,
+    -340
+   ],
+   "pivot": [
+    33,
+    14
+   ],
+   "parent": "hips",
+   "z": 22,
+   "scale_x": 1.18
+  },
+  {
+   "name": "shin_r",
+   "part": "shin_r",
+   "region": null,
+   "joint": [
+    31,
+    -196
+   ],
+   "pivot": [
+    27,
+    10
+   ],
+   "parent": "thigh_r",
+   "z": 20,
+   "scale_x": 1.15
+  },
+  {
+   "name": "boot_r",
+   "part": "boot_r",
+   "region": null,
+   "joint": [
+    34,
+    -92
+   ],
+   "pivot": [
+    36,
+    12
+   ],
+   "parent": "shin_r",
+   "z": 24,
+   "scale_x": 1.0
+  },
+  {
+   "name": "chest",
+   "part": "torso_front",
+   "region": [
+    0,
+    0,
+    161,
+    190
+   ],
+   "joint": [
+    0,
+    -372
+   ],
+   "pivot": [
+    80,
+    152
+   ],
+   "parent": "hips",
+   "z": 40,
+   "scale_x": 1.0
+  },
+  {
+   "name": "fore_l",
+   "part": "arm_l",
+   "region": [
+    0,
+    88,
+    59,
+    122
+   ],
+   "joint": [
+    -72,
+    -392
+   ],
+   "pivot": [
+    30,
+    96
+   ],
+   "parent": "arm_l",
+   "z": 35,
+   "scale_x": 1.0
+  },
+  {
+   "name": "arm_l",
+   "part": "arm_l",
+   "region": [
+    0,
+    0,
+    59,
+    104
+   ],
+   "joint": [
+    -68,
+    -500
+   ],
+   "pivot": [
+    30,
+    -12
+   ],
+   "parent": "chest",
+   "z": 36,
+   "scale_x": 1.0
+  },
+  {
+   "name": "fore_r",
+   "part": "arm_r",
+   "region": [
+    0,
+    88,
+    54,
+    121
+   ],
+   "joint": [
+    72,
+    -392
+   ],
+   "pivot": [
+    27,
+    96
+   ],
+   "parent": "arm_r",
+   "z": 35,
+   "scale_x": 1.0
+  },
+  {
+   "name": "arm_r",
+   "part": "arm_r",
+   "region": [
+    0,
+    0,
+    54,
+    104
+   ],
+   "joint": [
+    68,
+    -500
+   ],
+   "pivot": [
+    27,
+    -12
+   ],
+   "parent": "chest",
+   "z": 36,
+   "scale_x": 1.0
+  },
+  {
+   "name": "scarf",
+   "part": "neckwrap_front",
+   "region": null,
+   "joint": [
+    0,
+    -518
+   ],
+   "pivot": [
+    73,
+    22
+   ],
+   "parent": "chest",
+   "z": 52,
+   "scale_x": 1.0
+  },
+  {
+   "name": "head",
+   "part": "head_front",
+   "region": null,
+   "joint": [
+    0,
+    -512
+   ],
+   "pivot": [
+    57,
+    128
+   ],
+   "parent": "chest",
+   "z": 50,
+   "scale_x": 1.0
+  }
+ ],
+ "hair_heads": [
+  "hair_01_tousled",
+  "hair_02_tidy_crop",
+  "hair_03_windswept",
+  "hair_04_layered_shag",
+  "hair_05_side_part",
+  "hair_06_undercut",
+  "hair_07_tied_low",
+  "hair_08_tied_high",
+  "hair_09_travel_braid",
+  "hair_10_braided_tail",
+  "hair_11_half_up",
+  "hair_12_messy_long",
+  "hair_13_rough_wild",
+  "hair_14_scruffy",
+  "hair_15_rebellious",
+  "hair_16_rugged"
+ ],
+ "head_scale": 1.3,
+ "head_joint_y": -534,
+ "attachments": [
+  {
+   "name": "goggles",
+   "part": "goggles",
+   "parent": "head",
+   "joint": [
+    0,
+    -632
+   ],
+   "pivot": [
+    47,
+    23
+   ],
+   "z": 55,
+   "scale": 0.62,
+   "rotation": 0.0
+  },
+  {
+   "name": "cap",
+   "part": "cap",
+   "parent": "head",
+   "joint": [
+    0,
+    -628
+   ],
+   "pivot": [
+    44,
+    40
+   ],
+   "z": 56,
+   "scale": 1.0,
+   "rotation": 0.0
+  },
+  {
+   "name": "satchel",
+   "part": "satchel_side",
+   "parent": "hips",
+   "joint": [
+    -74,
+    -352
+   ],
+   "pivot": [
+    34,
+    10
+   ],
+   "z": 33,
+   "scale": 0.8,
+   "rotation": 0.0
+  },
+  {
+   "name": "charm",
+   "part": "compass_charm",
+   "parent": "hips",
+   "joint": [
+    40,
+    -360
+   ],
+   "pivot": [
+    16,
+    4
+   ],
+   "z": 42,
+   "scale": 0.7,
+   "rotation": 0.0
+  }
+ ]
+}

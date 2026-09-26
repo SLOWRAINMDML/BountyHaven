@@ -18,7 +18,7 @@ func reset(write: bool = true) -> void:
 			{"uid": 1, "id": "bed", "x": 2, "y": 0, "rotated": false},
 			{"uid": 2, "id": "lamp", "x": 5, "y": 0, "rotated": false}],
 		"next_uid": 3, "sequence": 0, "mission": {}, "phase": "dock", "settled": [],
-		"completed": 0, "journal": ["작은 배, 커다란 여행."]}
+		"completed": 0, "journal": ["작은 배, 커다란 여행."], "look": BHAppearance.defaults()}
 	if write:
 		commit()
 
@@ -274,6 +274,24 @@ func rest() -> Dictionary:
 	commit()
 	return result(true, "휴식 완료 · 컨디션 %d / 쾌적도 %d" % [s.condition, comfort()])
 
+## Change one appearance option; purely cosmetic, allowed at any time.
+func set_look(key: String, value: Variant) -> Dictionary:
+	if not s.has("look"):
+		s.look = BHAppearance.defaults()
+	if not s.look.has(key):
+		return result(false, "알 수 없는 외형 항목입니다.")
+	var candidate: Dictionary = s.look.duplicate()
+	candidate[key] = value
+	return replace_look(candidate)
+
+## Replace the whole protagonist look at once (random or reset in the creator).
+func replace_look(candidate: Dictionary) -> Dictionary:
+	if not BHAppearance.valid(candidate):
+		return result(false, "선택할 수 없는 외형입니다.")
+	s.look = candidate.duplicate()
+	commit()
+	return result(true, "외형을 바꿨습니다.")
+
 func save_game() -> bool:
 	last_storage_error = ""
 	var payload: String = JSON.stringify(s)
@@ -332,6 +350,9 @@ func validate_save(data: Dictionary) -> bool:
 		if not data.has(key):
 			return false
 	if not whole(data.schema,SCHEMA,SCHEMA) or not whole(data.credits) or not whole(data.condition,0,100):
+		return false
+	# Appearance arrived after the first saves: optional, but must be valid when present.
+	if data.has("look") and not BHAppearance.valid(data.look):
 		return false
 	if not whole(data.next_uid,1) or not whole(data.sequence) or not whole(data.completed):
 		return false
@@ -422,6 +443,8 @@ func load_game() -> bool:
 	if restored.is_empty():
 		return false
 	s = restored
+	if not s.has("look"):
+		s.look = BHAppearance.defaults()
 	if s.phase == "flight":
 		s.phase = "dock"
 		s.mission.status = "ready"

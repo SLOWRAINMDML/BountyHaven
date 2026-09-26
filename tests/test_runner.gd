@@ -22,6 +22,7 @@ func run() -> void:
 	housing_tests()
 	module_tests()
 	save_tests()
+	await appearance_tests()
 	await combat_tests()
 	await hazard_tests()
 	await view3d_tests()
@@ -134,6 +135,48 @@ func module_tests() -> void:
 	Game.accept("mechanic","pilot")
 	Game.launch()
 	check(not Game.equip("emp",0).ok and not Game.buy_module("drone").ok,"loadout locked during flight")
+
+func appearance_tests() -> void:
+	Game.reset(false)
+	check(BHAppearance.valid(Game.s.look) and Game.s.look.hair=="base","new captain starts with the cutout-sheet look")
+	check(Game.set_look("hair","hair_08_tied_high").ok and Game.s.look.hair=="hair_08_tied_high","hairstyle choice persists in state")
+	check(not Game.set_look("hair","hair_99").ok and Game.s.look.hair=="hair_08_tied_high","unknown hairstyle rejected")
+	check(not Game.set_look("cloth",12).ok and not Game.set_look("cloth",-1).ok and not Game.set_look("cloth",1.5).ok,"cloth colour out of catalog rejected")
+	check(not Game.set_look("goggles","yes").ok and not Game.set_look("wings",true).ok,"gear toggles only accept known booleans")
+	check(Game.set_look("cloth",9).ok and Game.set_look("cap",true).ok and Game.validate_save(Game.s),"customized look validates for save")
+	var parser = JSON.new()
+	parser.parse(JSON.stringify(Game.s))
+	check(Game.validate_save(parser.data),"look survives JSON number conversion")
+	var old: Dictionary = parser.data.duplicate(true)
+	old.erase("look")
+	check(Game.validate_save(old),"saves from before customization still load")
+	var broken: Dictionary = parser.data.duplicate(true)
+	broken.look = {"hair":"base"}
+	check(not Game.validate_save(broken),"malformed look rejected on load")
+	var missing: Array = []
+	for id in BHAppearance.hair_ids():
+		if not ResourceLoader.exists(BHPaperDoll.PART_DIR+("head_front" if id=="base" else id)+".png"):
+			missing.append(id)
+	var rig: Dictionary = BHPaperDoll.load_rig()
+	for entry in rig.get("nodes",[])+rig.get("attachments",[]):
+		if not ResourceLoader.exists(BHPaperDoll.PART_DIR+str(entry.part)+".png"):
+			missing.append(entry.part)
+	check(missing.is_empty() and rig.nodes.size()==15,"every rig part and hairstyle has a transparent PNG")
+	var doll = BHPaperDoll.new()
+	doll.look = Game.s.look.duplicate()
+	add_child(doll)
+	await get_tree().process_frame
+	check(doll.sprites.size()==19 and doll.sprites.head.texture.resource_path.ends_with("hair_08_tied_high.png"),"paper doll builds all parts with chosen hair")
+	check(doll.sprites.cap.visible and not doll.sprites.goggles.visible,"paper doll shows only equipped gear")
+	var rest_boot: Vector2 = doll.sprites.boot_l.position
+	doll.moving = true
+	for n in range(6):
+		doll._process(0.05)
+	check(doll.sprites.boot_l.position.distance_to(rest_boot)>4.0,"walk cycle moves the legs")
+	doll.apply_look(BHAppearance.defaults())
+	check(doll.sprites.head.texture.resource_path.ends_with("head_front.png") and not doll.sprites.cap.visible,"doll swaps look live")
+	doll.queue_free()
+	Game.reset(false)
 
 func save_tests() -> void:
 	Game.reset(false)

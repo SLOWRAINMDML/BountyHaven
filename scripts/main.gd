@@ -34,11 +34,14 @@ var mode: String = "pilot"
 var capture_mode: bool = false
 var end_pending: bool = false
 var current_report: Dictionary = {}
+var preview_walk: bool = false
+var preview_facing: float = 1.0
+var preview_doll: BHPaperDoll
 
 func _ready() -> void:
 	bind_inputs()
 	var args: PackedStringArray = OS.get_cmdline_user_args()
-	Game.persistence = not ("--self-test" in args or "--capture-all" in args or "--autoplay" in args)
+	Game.persistence = not ("--self-test" in args or "--capture-all" in args or "--capture-look" in args or "--autoplay" in args)
 	Game.reset(false)
 	if "--self-test" in args:
 		Sfx.enabled = false
@@ -46,7 +49,7 @@ func _ready() -> void:
 		add_child(runner)
 		runner.run.call_deferred()
 		return
-	capture_mode = "--capture-all" in args
+	capture_mode = "--capture-all" in args or "--capture-look" in args
 	if not capture_mode and Game.persistence:
 		Game.load_game()
 	canvas = CanvasLayer.new()
@@ -55,7 +58,10 @@ func _ready() -> void:
 	show_habitat("port")
 	if capture_mode:
 		Sfx.enabled = false
-		capture_all.call_deferred()
+		if "--capture-look" in args:
+			capture_look.call_deferred()
+		else:
+			capture_all.call_deferred()
 	elif "--autoplay" in args:
 		Sfx.enabled = false
 		var driver = load("res://tools/autoplay.gd").new()
@@ -165,6 +171,7 @@ func build_hud() -> void:
 			var b = UI.button(entry[0],func():route_to(key))
 			b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 			commands.add_child(b)
+		commands.add_child(UI.button("외형",func():open_panel("appearance")))
 		commands.add_child(UI.button("항로 지도",func():open_panel("map")))
 	else:
 		for entry in [["가구 구입 · 배치","housing"],["함선 파츠","outfitter"],["조종석 · 출항","launch"]]:
@@ -173,6 +180,7 @@ func build_hud() -> void:
 			b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 			commands.add_child(b)
 		commands.add_child(UI.button("가구 옮기기",edit_furniture))
+		commands.add_child(UI.button("옷장 · 외형",func():open_panel("appearance")))
 		commands.add_child(UI.button("함께 휴식",func():apply_result(Game.rest())))
 		commands.add_child(UI.button("항구로",func():show_habitat("port")))
 	hint_label = UI.label("",14,UI.MUTED)
@@ -264,13 +272,13 @@ func open_panel(kind: String) -> void:
 	world.controls_enabled = false
 	if world is BHSpace:
 		world.simulation_paused = true
-	panel = panel_at(Rect2(1030,207,528,580),UI.PAPER)
+	panel = panel_at(Rect2(1030,207,528,580) if kind!="appearance" else Rect2(420,100,1138,696),UI.PAPER)
 	panel.add_theme_stylebox_override("panel",UI.style(UI.PAPER,UI.MUTED,4))
 	var stack = VBoxContainer.new()
 	panel.add_child(stack)
 	var title_row = HBoxContainer.new()
 	stack.add_child(title_row)
-	var titles: Dictionary = {"guild":"길드 · 계약 게시판","tavern":"항구의 술집","outfitter":"정비소 · 모듈 장착","records":"항로 기록 보관소","housing":"우리 배의 생활 공간","launch":"조종석 · 출항 준비","map":"항로 지도","journal":"선장의 기록","menu":"항해 잠시 멈춤","new_confirm":"새 항해 시작","report":"작전 정산"}
+	var titles: Dictionary = {"guild":"길드 · 계약 게시판","tavern":"항구의 술집","outfitter":"정비소 · 모듈 장착","records":"항로 기록 보관소","housing":"우리 배의 생활 공간","launch":"조종석 · 출항 준비","map":"항로 지도","journal":"선장의 기록","menu":"항해 잠시 멈춤","new_confirm":"새 항해 시작","report":"작전 정산","appearance":"선장 외형 · 커스터마이즈"}
 	var heading = UI.label(titles.get(kind,kind),24)
 	heading.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	title_row.add_child(heading)
@@ -295,6 +303,132 @@ func open_panel(kind: String) -> void:
 		"menu": menu_panel()
 		"new_confirm": new_confirm_panel()
 		"report": report_panel()
+		"appearance": appearance_panel()
+
+## Character creator: live paper-doll preview on the left, sheet-based options on the right.
+func appearance_panel() -> void:
+	var look: Dictionary = Game.s.get("look",BHAppearance.defaults())
+	var columns = HBoxContainer.new()
+	columns.add_theme_constant_override("separation",18)
+	panel_body.add_child(columns)
+	var left = VBoxContainer.new()
+	columns.add_child(left)
+	var stage = PanelContainer.new()
+	stage.custom_minimum_size = Vector2(360,470)
+	stage.clip_contents = true
+	stage.add_theme_stylebox_override("panel",UI.style(Color("e4e0d2"),Color("c6ccbf"),4))
+	left.add_child(stage)
+	var anchor = Control.new()
+	anchor.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	stage.add_child(anchor)
+	preview_doll = BHPaperDoll.new()
+	preview_doll.look = look.duplicate()
+	preview_doll.doll_scale = 0.66
+	preview_doll.position = Vector2(180,445)
+	preview_doll.moving = preview_walk
+	preview_doll.facing = preview_facing
+	anchor.add_child(preview_doll)
+	var tools = HBoxContainer.new()
+	left.add_child(tools)
+	for entry in [["걷기" if not preview_walk else "멈추기",func():preview_walk=not preview_walk;open_panel("appearance")],["방향 전환",func():preview_facing=-preview_facing;open_panel("appearance")]]:
+		var b = UI.button(entry[0],entry[1])
+		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		tools.add_child(b)
+	var tools2 = HBoxContainer.new()
+	left.add_child(tools2)
+	var rng = RandomNumberGenerator.new()
+	for entry in [["무작위",func():look_result(Game.replace_look(BHAppearance.random(rng)))],["기본값",func():look_result(Game.replace_look(BHAppearance.defaults()))]]:
+		var b = UI.button(entry[0],entry[1])
+		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		tools2.add_child(b)
+	var right = VBoxContainer.new()
+	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	right.add_theme_constant_override("separation",10)
+	columns.add_child(right)
+	var hair_name: String = ""
+	for entry in BHAppearance.HAIR:
+		if entry[0]==look.hair:
+			hair_name = entry[1]
+	right.add_child(UI.label("헤어스타일  ·  "+hair_name,20))
+	var grid = GridContainer.new()
+	grid.columns = 9
+	grid.add_theme_constant_override("h_separation",6)
+	grid.add_theme_constant_override("v_separation",6)
+	right.add_child(grid)
+	for entry in BHAppearance.HAIR:
+		var id: String = entry[0]
+		var b = Button.new()
+		b.tooltip_text = entry[1]
+		b.custom_minimum_size = Vector2(72,72)
+		b.icon = BHPaperDoll.part_texture("head_front" if id=="base" else id)
+		b.expand_icon = true
+		b.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		b.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+		if id==look.hair:
+			b.add_theme_stylebox_override("normal",UI.style(Color("d9cdb4"),Color("a8483a"),4))
+			b.add_theme_stylebox_override("hover",UI.style(Color("d9cdb4"),Color("a8483a"),4))
+		b.pressed.connect(func():look_result(Game.set_look("hair",id)))
+		grid.add_child(b)
+	right.add_child(UI.label("스카프 · 망토 색  ·  "+BHAppearance.CLOTH[int(look.cloth)][0],20))
+	var swatches = HBoxContainer.new()
+	swatches.add_theme_constant_override("separation",6)
+	right.add_child(swatches)
+	for index in BHAppearance.CLOTH.size():
+		var colour := Color(BHAppearance.CLOTH[index][1])
+		var chosen: bool = index==int(look.cloth)
+		var b = Button.new()
+		b.tooltip_text = BHAppearance.CLOTH[index][0]
+		b.custom_minimum_size = Vector2(50,50)
+		b.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+		for state in ["normal","hover","pressed","focus"]:
+			var box: StyleBoxFlat = UI.style(colour,Color("2e2c2b") if chosen else Color("bcc6b7"),25)
+			box.set_border_width_all(4 if chosen else 1)
+			b.add_theme_stylebox_override(state,box)
+		var choice: int = index
+		b.pressed.connect(func():look_result(Game.set_look("cloth",choice)))
+		swatches.add_child(b)
+	right.add_child(UI.label("장비",20))
+	var gear = GridContainer.new()
+	gear.columns = 3
+	gear.add_theme_constant_override("h_separation",8)
+	right.add_child(gear)
+	for entry in BHAppearance.GEAR:
+		var key: String = entry[0]
+		var on: bool = bool(look.get(key,false))
+		var b = UI.button(("✓ " if on else "·  ")+entry[1],func():look_result(Game.set_look(key,not on)))
+		b.custom_minimum_size.x = 214
+		gear.add_child(b)
+	right.add_child(UI.label("헤어는 헤어 시트의 16종, 색은 카탈로그 C1–C12, 장비는 컷아웃 부품 시트의 파츠입니다. 바꾼 외형은 저장되고 항구와 선내 캐릭터에 바로 적용됩니다.",15,UI.MUTED,true))
+
+func look_result(response: Dictionary) -> void:
+	Sfx.play("click" if response.ok else "hit")
+	if not response.ok:
+		toast(str(response.message))
+	open_panel("appearance")
+
+## Dev capture of the character creator (not part of --capture-all, which CI counts).
+func capture_look() -> void:
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path("res://artifacts/look"))
+	await get_tree().create_timer(0.5).timeout
+	open_panel("appearance")
+	await get_tree().create_timer(0.4).timeout
+	await capture("look/01_creator_default")
+	Game.replace_look({"hair":"hair_08_tied_high","cloth":9,"scarf":true,"cloak":true,"goggles":true,"cap":false,"satchel":true,"charm":true})
+	preview_walk = true
+	open_panel("appearance")
+	await get_tree().create_timer(0.37).timeout
+	await capture("look/02_creator_walk")
+	Game.replace_look({"hair":"hair_12_messy_long","cloth":4,"scarf":true,"cloak":false,"goggles":false,"cap":true,"satchel":true,"charm":false})
+	preview_walk = false
+	preview_facing = -1.0
+	open_panel("appearance")
+	await get_tree().create_timer(0.4).timeout
+	await capture("look/03_creator_cap")
+	close_panel()
+	world.player.moving = true
+	await get_tree().create_timer(0.3).timeout
+	await capture("look/04_harbor")
+	get_tree().quit(0)
 
 func para(text: String, size: int = 18, color: Color = UI.MUTED) -> void:
 	panel_body.add_child(UI.label(text,size,color,true))
