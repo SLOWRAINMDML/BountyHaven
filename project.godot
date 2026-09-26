@@ -1,0 +1,31 @@
+; Bounty Haven - Godot 4.x / GDScript / Compatibility renderer
+config_version=5
+
+[application]
+config/name="Bounty Haven"
+config/version="0.1.0"
+run/main_scene="res://scenes/main.tscn"
+config/features=PackedStringArray("4.7", "GL Compatibility")
+config/icon="res://assets/icon.svg"
+
+[autoload]
+Game="*res://scripts/core/game_state.gd"
+Sfx="*res://scripts/core/sound.gd"
+
+[display]
+window/size/viewport_width=1600
+window/size/viewport_height=900
+window/size/window_width_override=1440
+window/size/window_height_override=810
+window/stretch/mode="canvas_items"
+window/stretch/aspect="keep"
+
+[rendering]
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+textures/default_filters/use_nearest_mipmap_filter=false
+textures/canvas_textures/default_texture_filter=2
+environment/defaults/default_clear_color=Color(0.94, 0.92, 0.86, 1)
+
+[internationalization]
+locale/fallback="ko"
