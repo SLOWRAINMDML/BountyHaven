@@ -67,18 +67,26 @@ EXPR_DESC = {
 }
 
 
+VIEW_DESC = {
+    "front": "front view",
+    "back": "back view (show the back of the garments; the cloak shows the compass mark)",
+    "left": "exact side profile view of the character's LEFT side (the character faces the left edge of the image)",
+    "right": "exact side profile view of the character's RIGHT side (the character faces the right edge of the image)",
+}
+
+
 def jobs():
     out = []
     for o, desc in OUTFIT_DESC.items():
-        for side in ("front", "back"):
-            view = "front view" if side == "front" else "back view (show the back of the garments; the cloak shows the compass mark)"
+        for side in ("front", "back", "left", "right"):
+            view = VIEW_DESC[side]
             out.append(dict(name=f"body_{o}_{side}", src=f"body_{o}_{side}", refs=[DESIGN, OUTFIT_SHEET, TURN],
                             prompt=f"{KEEP}\n\nRepaint as the BountyHaven protagonist, full body, {view}, wearing {desc}. "
                                    f"The face should read as in the design sheet (warm brown eyes, tousled brown hair).\n\n{STYLE}"))
     for h, desc in HAIR_DESC.items():
-        for side in ("front", "back"):
+        for side in ("front", "back", "left", "right"):
             out.append(dict(name=f"hair_{h}_{side}", src=f"hair_{h}_{side}", refs=[HAIR_SHEET, DESIGN],
-                            prompt=f"{KEEP}\n\nRepaint as a head-and-shoulders {side} view of the BountyHaven protagonist with hairstyle "
+                            prompt=f"{KEEP}\n\nRepaint as a head-and-shoulders {VIEW_DESC[side]} of the BountyHaven protagonist with hairstyle "
                                    f"{desc} from the attached hair customization sheet: individual painted locks, ink strand lines, "
                                    f"warm highlights. Keep the hair mass exactly inside the render's hair silhouette.\n\n{STYLE}"))
     out.append(dict(name="face_neutral", src="head_bare_front", refs=[EXPR_SHEET, DESIGN],
@@ -87,6 +95,12 @@ def jobs():
                            f"soft nose line, closed mouth, light freckle-free warm skin. The head is intentionally BALD because the hair "
                            f"is a separate 3D part: paint bare skin on the scalp, do NOT add any hair. Keep the scarf and jacket at the "
                            f"bottom as they are.\n\n{STYLE}"))
+    for side in ("left", "right"):
+        out.append(dict(name=f"head_bare_{side}", src=f"head_bare_{side}", refs=[DESIGN],
+                        prompt=f"{KEEP}\n\nPaint the protagonist's BALD head, {VIEW_DESC[side]}: warm skin with an ear, "
+                               f"the side of the face (brown eye and brow in profile, nose and mouth line) matching the design sheet, "
+                               f"soft watercolor shading. Hair is a separate 3D part, do NOT add hair. Keep the scarf and collar at "
+                               f"the bottom.\n\n{STYLE}"))
     out.append(dict(name="head_bare_back", src="head_bare_back", refs=[DESIGN],
                     prompt=f"{KEEP}\n\nPaint the back of the protagonist's BALD head and neck as bare warm skin with soft watercolor "
                            f"shading (hair is a separate 3D part, do NOT add hair), the scarf and jacket collar at the bottom.\n\n{STYLE}"))

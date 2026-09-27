@@ -30,6 +30,7 @@ OUTFITS = ["pilot", "vest", "mechanic", "guild"]
 HAIRS = ["tousled", "windswept", "tied_low", "tidy_crop", "messy_long", "travel_braid"]
 EXPR = ["neutral"] + bc.EXPRESSIONS
 
+SIDES = ("front", "back", "left", "right")  # atlas quadrants: top row front|back, bottom row left|right
 # frame = (centre x, centre z, ortho scale)
 BODY_FRAME = (0.0, 0.94, 2.0)
 HEAD_FRAME = (0.0, 1.64, 0.62)
@@ -54,29 +55,52 @@ def ortho_cam(frame, side):
         scn.collection.objects.link(cam)
     cam.data.type = "ORTHO"
     cam.data.ortho_scale = s
-    y = -4.0 if side == "front" else 4.0
-    cam.location = (cx, y, cz)
-    bc.aim(cam, (cx, 0, cz))
+    cam.location = {"front": (cx, -4.0, cz), "back": (cx, 4.0, cz), "left": (4.0, 0, cz), "right": (-4.0, 0, cz)}[side]
+    bc.aim(cam, (cx if side in ("front", "back") else 0, 0, cz))
     scn.camera = cam
     return cam
 
 
-def project_uv(obj, frame, half_of=None):
-    """UV 'Paint': front-facing faces -> left half (front image), others -> right half (back image)."""
+def image_uv(co, frame, side):
+    """Where a world point lands in the orthographic image of `side` (0..1, 0..1)."""
     cx, cz, s = frame
+    h = {"front": co.x - cx, "back": -(co.x - cx), "left": co.y, "right": -co.y}[side]
+    return h / s + 0.5, (co.z - cz) / s + 0.5
+
+
+VIEW_DIR = {"front": Vector((0, -1, 0)), "back": Vector((0, 1, 0)), "left": Vector((1, 0, 0)), "right": Vector((-1, 0, 0))}
+
+
+def occluded(origin, direction, own):
+    """True when something (e.g. the A-pose arm) sits between this point and the side camera."""
+    dg = bpy.context.evaluated_depsgraph_get()
+    hit, loc, _, _, ob, _ = scn.ray_cast(dg, origin, direction, distance=3.0)
+    return bool(hit) and (loc - origin).length > 0.01
+
+
+def project_uv(obj, frame):
+    """UV 'Paint': each face samples the view that sees it most squarely (4-quadrant atlas)."""
     me = obj.data
     uv = me.uv_layers.get("Paint") or me.uv_layers.new(name="Paint")
     mw = obj.matrix_world
     nm = mw.to_3x3().inverted().transposed()
     for p in me.polygons:
-        n = (nm @ p.normal)
-        back = half_of == "back" or (half_of is None and n.y > 0.0)
+        n = (nm @ p.normal).normalized()
+        score = {"front": -n.y, "back": n.y, "left": n.x, "right": -n.x}
+        centre = mw @ p.center
+        side = max(score, key=score.get)
+        for cand in sorted(score, key=score.get, reverse=True):
+            if score[cand] < 0.15:
+                break
+            if not occluded(centre + n * 0.004, VIEW_DIR[cand], obj):
+                side = cand
+                break
+        q = SIDES.index(side)
+        u0, v0 = (q % 2) * 0.5, (0.5 if q < 2 else 0.0)
         for li in p.loop_indices:
             co = mw @ me.vertices[me.loops[li].vertex_index].co
-            u = ((co.x - cx) / s + 0.5) if not back else ((-(co.x - cx)) / s + 0.5)
-            v = (co.z - cz) / s + 0.5
-            u = min(max(u, 0.001), 0.999)
-            uv.data[li].uv = (u * 0.5 + (0.5 if back else 0.0), min(max(v, 0.001), 0.999))
+            u, v = image_uv(co, frame, side)
+            uv.data[li].uv = (u0 + 0.5 * min(max(u, 0.002), 0.998), v0 + 0.5 * min(max(v, 0.002), 0.998))
     me.uv_layers.active = uv
     uv.active_render = True
     # drop the old box-projection UVs so glTF carries a single TEXCOORD_0
@@ -121,35 +145,35 @@ def do_render():
 
     for i, o in enumerate(OUTFITS):
         bc.set_variant(arm, outfit=i, hair=0)
-        for side in ("front", "back"):
+        for side in SIDES:
             shot(f"body_{o}", BODY_FRAME, side)
     bc.set_variant(arm, outfit=0)
     for i, h in enumerate(HAIRS):
         bc.set_variant(arm, hair=i)
-        for side in ("front", "back"):
+        for side in SIDES:
             shot(f"hair_{h}", HEAD_FRAME, side)
     bc.set_variant(arm, hair=-1)  # bare head for the face paint
-    for side in ("front", "back"):
+    for side in SIDES:
         shot("head_bare", HEAD_FRAME, side)
     print("RENDERED", os.path.join(PAINT, "renders"))
 
 
 # --------------------------------------------------------------------------
-def atlas(front, back, out):
-    """Side-by-side [front | back] atlas image, built inside Blender (no PIL needed)."""
+def atlas(paths, out):
+    """2x2 atlas [front | back] over [left | right] (Blender pixel rows start at the bottom)."""
     import numpy as np
-    imgs = []
-    for p in (front, back):
+    q = []
+    for p in paths:
         im = bpy.data.images.load(p, check_existing=False)  # always read the current file
         im.scale(RES, RES)
-        imgs.append(np.array(im.pixels[:], dtype=np.float32).reshape(RES, RES, 4))
+        q.append(np.array(im.pixels[:], dtype=np.float32).reshape(RES, RES, 4))
         bpy.data.images.remove(im)
-    a = np.concatenate(imgs, axis=1)
+    a = np.concatenate([np.concatenate(q[2:4], axis=1), np.concatenate(q[0:2], axis=1)], axis=0)
     a[..., 3] = 1.0
     stale = bpy.data.images.get(os.path.basename(out)[:-4])
     if stale:
         bpy.data.images.remove(stale)
-    img = bpy.data.images.new(os.path.basename(out)[:-4], RES * 2, RES, alpha=False)
+    img = bpy.data.images.new(os.path.basename(out)[:-4], RES * 2, RES * 2, alpha=False)
     img.pixels = a.ravel()
     img.filepath_raw = out
     img.file_format = "JPEG" if out.endswith(".jpg") else "PNG"
@@ -188,9 +212,13 @@ def do_apply():
     os.makedirs(tex_dir, exist_ok=True)
     os.makedirs(os.path.join(PAINT, "atlas"), exist_ok=True)
     painted = os.path.join(PAINT, "painted")
+    stage = list(bpy.data.collections["Stage"].objects)
+    for o in stage:  # the backdrop would block every back-view ray
+        o.hide_viewport = True
+    bc.set_variant(arm, weapon=0, goggles=0)  # occlusion as in the paint renders
 
     def have(name):
-        return all(os.path.exists(os.path.join(painted, f"{name}_{s}.png")) for s in ("front", "back"))
+        return all(os.path.exists(os.path.join(painted, f"{name}_{s}.png")) for s in SIDES)
 
     for kind, keys, frame in (("body", OUTFITS, BODY_FRAME), ("hair", HAIRS, HEAD_FRAME)):
         for k in keys:
@@ -198,7 +226,7 @@ def do_apply():
             if not have(name):
                 print("SKIP (not painted yet)", name)
                 continue
-            img = atlas(os.path.join(painted, f"{name}_front.png"), os.path.join(painted, f"{name}_back.png"),
+            img = atlas([os.path.join(painted, f"{name}_{sd}.png") for sd in SIDES],
                         os.path.join(PAINT, "atlas", f"{name}.png"))
             mat = paint_material(f"paint_{name}", img)
             for o in objects_for_pass(kind, k):
@@ -208,12 +236,12 @@ def do_apply():
 
     # head: neutral + expression textures (front changes, back is shared)
     head = bpy.data.objects["Head"]
-    back = os.path.join(painted, "head_bare_back.png")
+    shared = [os.path.join(painted, f"head_bare_{sd}.png") for sd in SIDES[1:]]
     face_imgs = {}
     for e in EXPR:
         front = os.path.join(painted, f"face_{e}.png")
-        if os.path.exists(front) and os.path.exists(back):
-            face_imgs[e] = atlas(front, back, os.path.join(tex_dir, f"head_{e}.jpg"))
+        if os.path.exists(front) and all(os.path.exists(p) for p in shared):
+            face_imgs[e] = atlas([front] + shared, os.path.join(tex_dir, f"head_{e}.jpg"))
             face_imgs[e].use_fake_user = True  # keep unused expressions in the .blend
     if "neutral" in face_imgs:
         project_uv(head, HEAD_FRAME)
@@ -227,6 +255,9 @@ def do_apply():
         txt.use_module = True
         print("PAINTED head", list(face_imgs))
 
+    for o in stage:
+        o.hide_viewport = False
+    bc.set_variant(arm, weapon=1, goggles=1)
     bpy.ops.wm.save_as_mainfile(filepath=os.path.join(bc.HERE, "bountyhaven_hero.blend"))
     export()
     if "--no-render" not in sys.argv:
@@ -290,6 +321,8 @@ def preview():
     cam = bpy.data.objects["Cam"]
     out = os.path.join(ROOT, "renders")
     scn.render.resolution_x, scn.render.resolution_y = 768, 1024
+    ad = arm.animation_data or arm.animation_data_create()
+    ad.action = bpy.data.actions["idle"]  # show the look in a natural stance, not the bind A-pose
     for i, k in enumerate(OUTFITS):
         bc.set_variant(arm, outfit=i, hair=[0, 1, 2, 5][i], expression=0, weapon=1)
         bc.place_cam(cam, *bc.CAM_FULL)
@@ -308,7 +341,6 @@ def preview():
     set_expression_texture("neutral")
     bc.set_variant(arm, expression=0)
     bc.place_cam(cam, *bc.CAM_FULL)
-    ad = arm.animation_data
     for act in [a for a in bpy.data.actions if a.use_fake_user]:
         bc.set_variant(arm, weapon=2 if act.name == "shoot" else 1)
         ad.action = act

@@ -363,6 +363,33 @@ def build_body(col):
     return body
 
 
+def smooth_weights(obj, iters=4, keep=4):
+    """Average each vertex's bone weights with its neighbours so joints fold softly."""
+    import numpy as np
+    me = obj.data
+    names = [g.name for g in obj.vertex_groups]
+    w = np.zeros((len(me.vertices), len(names)))
+    for v in me.vertices:
+        for g in v.groups:
+            w[v.index, g.group] = g.weight
+    e = np.array([ed.vertices[:] for ed in me.edges])
+    deg = np.maximum(np.bincount(e.ravel(), minlength=len(w)), 1).astype(float)[:, None]
+    for _ in range(iters):
+        acc = np.zeros_like(w)
+        np.add.at(acc, e[:, 0], w[e[:, 1]])
+        np.add.at(acc, e[:, 1], w[e[:, 0]])
+        w = 0.5 * w + 0.5 * acc / deg
+    idx = np.argsort(-w, axis=1)[:, :keep]
+    for g in list(obj.vertex_groups):
+        g.remove(list(range(len(me.vertices))))
+    top = w[np.arange(len(w))[:, None], idx]
+    top /= np.maximum(top.sum(axis=1, keepdims=True), 1e-9)
+    for vi in range(len(w)):
+        for k in range(keep):
+            if top[vi, k] > 0.01:
+                obj.vertex_groups[idx[vi, k]].add([vi], float(top[vi, k]), "REPLACE")
+
+
 def build_head(col):
     bm = bmesh.new()
     bmesh.ops.create_uvsphere(bm, u_segments=24, v_segments=16, radius=1.0)
@@ -535,7 +562,7 @@ def shell(body, name, col, offset, keep, cuts=(), mat=None):
     kill = [f for f in bm.faces if not keep(f.calc_center_median())]
     bmesh.ops.delete(bm, geom=kill, context="FACES")
     for v in bm.verts:
-        v.co += v.normal * offset
+        v.co += v.normal * (offset(v.co) if callable(offset) else offset)
     bm.to_mesh(obj.data)
     bm.free()
     shade_smooth(obj)
@@ -691,13 +718,28 @@ def build_outfits(body, arm, root_col):
     dark = material("leather_dark")
     brass = material("brass", metallic=0.6, roughness=0.5)
 
-    def legs(col, prefix, trouser="trouser_grey", boot_top=0.36, knee_pads=True):
-        items = [piece(body, f"{prefix}_Trousers", col, 0.015, lower(1.0), material(trouser)),
+    def baggy(co):
+        """Loose cargo cut: extra cloth over the thigh and bunched above the boot."""
+        return 0.015 + 0.024 * math.exp(-((co.z - 0.66) / 0.16) ** 2) + 0.016 * math.exp(-((co.z - 0.42) / 0.05) ** 2)
+
+    def legs(col, prefix, trouser="trouser_grey", boot_top=0.36, knee_pads=True, cargo=True):
+        items = [piece(body, f"{prefix}_Trousers", col, baggy, lower(1.0), material(trouser)),
                  belt(body, col, prefix, leather, z=(0.96, 1.03), offset=0.03)]
         items += boots(body, col, prefix, boot_top, material("leather"), offset=0.028)
-        if knee_pads:
-            for sx, x in (("L", 1), ("R", -1)):
-                items.append(ellipsoid(f"{prefix}_KneePad.{sx}", col, (0.058, 0.03, 0.065), (0.10 * x, -0.062, 0.5), dark, segs=(12, 8)))
+        for sx, x in (("L", 1), ("R", -1)):
+            # chunky soles and toe caps, like the design sheet's work boots
+            items.append(bind(box(f"{prefix}_BootSole.{sx}", col, (0.13, 0.27, 0.035), (0.10 * x, -0.05, 0.017), dark, bevel=0.01), arm, bone=f"foot.{sx}"))
+            items.append(bind(ellipsoid(f"{prefix}_BootToe.{sx}", col, (0.066, 0.075, 0.05), (0.10 * x, -0.14, 0.05), material("leather"), segs=(12, 8)), arm, bone=f"toe.{sx}"))
+            bs = ring(f"{prefix}_BootStrap.{sx}", col, 0.0, 0.078, 0.08, 0, 0.018, dark)
+            bs.location = (0.10 * x, 0.02, 0.24)
+            items.append(bind(bs, arm, bone=f"shin.{sx}"))
+            if knee_pads:
+                items.append(ellipsoid(f"{prefix}_KneePad.{sx}", col, (0.064, 0.035, 0.072), (0.10 * x, -0.075, 0.5), dark, segs=(12, 8)))
+            if cargo:  # thigh cargo pocket with flap on the outer thigh
+                items.append(bind(box(f"{prefix}_ThighPocket.{sx}", col, (0.05, 0.12, 0.13), (0.225 * x, -0.01, 0.68), material(trouser), bevel=0.012), arm, bone=f"thigh.{sx}"))
+                items.append(bind(box(f"{prefix}_ThighFlap.{sx}", col, (0.055, 0.125, 0.04), (0.23 * x, -0.01, 0.74), dark, bevel=0.008), arm, bone=f"thigh.{sx}"))
+        for sx, x in (("L", 1), ("R", -1)):  # belt pouches
+            items.append(bind(box(f"{prefix}_BeltPouch.{sx}", col, (0.08, 0.05, 0.09), (0.13 * x, -0.125, 0.94), leather, bevel=0.012), arm, bone="hips"))
         return items
 
     # --- 01 pilot jacket (the design-sheet default)
@@ -1414,6 +1456,7 @@ def main():
     arm.select_set(True)
     bpy.context.view_layer.objects.active = arm
     bpy.ops.object.parent_set(type="ARMATURE_AUTO")
+    smooth_weights(body, iters=4)
     if not body.vertex_groups or all(len(v.groups) == 0 for v in body.data.vertices[:10]):
         print("WARN: automatic weights failed, falling back to envelopes")
         bpy.ops.object.parent_set(type="ARMATURE_ENVELOPE")
