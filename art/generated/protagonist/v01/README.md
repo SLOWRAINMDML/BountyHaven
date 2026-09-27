@@ -7,7 +7,7 @@ Pipeline:
 2. `python3 tools/art/build_rig.py <preview.png>` writes `rig.json` (joints, pivots, draw order, gear attachments) and a rest/stride preview.
 3. `tools/art/contact_sheet.py <parts dir> <out.png>` previews the cuts on dark and magenta backdrops.
 
-Runtime: `scripts/world/paper_doll.gd` (BHPaperDoll) solves the rig each frame for idle and walk; `scripts/core/appearance.gd` lists the options; the look is saved as `look` in the save file (optional key, older saves load with defaults). The creator panel opens from the harbor ("외형") and cabin ("옷장 · 외형") command bars. `--capture-look` renders the creator into `artifacts/look/`.
+Runtime: v01's `rig.json` was migrated once by `tools/art/migrate_rig_v2.py` into the skeletal rig `assets/characters/captain/captain.rig.json`, which the rig editor now owns (see `docs/art/CHARACTER_RIG_GUIDE.md`). `scripts/world/puppet.gd` (BHPuppet) plays it in eight directions with idle, walk and run; `scripts/core/appearance.gd` lists the options; the look is saved as `look` in the save file (optional key, older saves load with defaults). The creator panel opens from the harbor ("외형") and cabin ("옷장 · 외형") command bars. `--capture-look` renders the creator into `artifacts/look/`.
 
 Options in v01: 16 hairstyles plus the base head, 12 catalog accent colours (C1–C12) applied to scarf and cloak, and six gear toggles (scarf, cloak, goggles, cap, satchel, compass charm).
 

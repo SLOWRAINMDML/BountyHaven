@@ -35,14 +35,22 @@ var capture_mode: bool = false
 var end_pending: bool = false
 var current_report: Dictionary = {}
 var preview_walk: bool = false
-var preview_facing: float = 1.0
-var preview_doll: BHPaperDoll
+var preview_sector: int = 2
+var preview_doll: BHPuppet
 
 func _ready() -> void:
 	bind_inputs()
 	var args: PackedStringArray = OS.get_cmdline_user_args()
-	Game.persistence = not ("--self-test" in args or "--capture-all" in args or "--capture-look" in args or "--autoplay" in args)
+	Game.persistence = not ("--self-test" in args or "--capture-all" in args or "--capture-look" in args or "--capture-rig" in args or "--autoplay" in args)
 	Game.reset(false)
+	if "--rig-editor" in args or "--capture-rig" in args:
+		var layer = CanvasLayer.new()
+		add_child(layer)
+		var editor = BHRigEditor.new()
+		layer.add_child(editor)
+		if "--capture-rig" in args:
+			capture_rig.call_deferred(editor)
+		return
 	if "--self-test" in args:
 		Sfx.enabled = false
 		var runner = load("res://tests/test_runner.gd").new()
@@ -321,16 +329,17 @@ func appearance_panel() -> void:
 	var anchor = Control.new()
 	anchor.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	stage.add_child(anchor)
-	preview_doll = BHPaperDoll.new()
+	preview_doll = BHPuppet.new()
 	preview_doll.look = look.duplicate()
 	preview_doll.doll_scale = 0.66
 	preview_doll.position = Vector2(180,445)
-	preview_doll.moving = preview_walk
-	preview_doll.facing = preview_facing
+	preview_doll.auto_direction = false
+	preview_doll.direction = BHRig.sector_direction(preview_sector)
+	preview_doll.clip = "walk" if preview_walk else "idle"
 	anchor.add_child(preview_doll)
 	var tools = HBoxContainer.new()
 	left.add_child(tools)
-	for entry in [["걷기" if not preview_walk else "멈추기",func():preview_walk=not preview_walk;open_panel("appearance")],["방향 전환",func():preview_facing=-preview_facing;open_panel("appearance")]]:
+	for entry in [["걷기" if not preview_walk else "멈추기",func():preview_walk=not preview_walk;open_panel("appearance")],["방향 돌리기",func():preview_sector=(preview_sector+1)%8;open_panel("appearance")]]:
 		var b = UI.button(entry[0],entry[1])
 		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		tools.add_child(b)
@@ -360,7 +369,7 @@ func appearance_panel() -> void:
 		var b = Button.new()
 		b.tooltip_text = entry[1]
 		b.custom_minimum_size = Vector2(72,72)
-		b.icon = BHPaperDoll.part_texture("head_front" if id=="base" else id)
+		b.icon = hair_icon(id)
 		b.expand_icon = true
 		b.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		b.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
@@ -400,11 +409,37 @@ func appearance_panel() -> void:
 		gear.add_child(b)
 	right.add_child(UI.label("헤어는 헤어 시트의 16종, 색은 카탈로그 C1–C12, 장비는 컷아웃 부품 시트의 파츠입니다. 바꾼 외형은 저장되고 항구와 선내 캐릭터에 바로 적용됩니다.",15,UI.MUTED,true))
 
+func hair_icon(id: String) -> Texture2D:
+	var rig: Dictionary = BHRig.load_file(BHPuppet.DEFAULT_RIG)
+	var custom: Dictionary = rig.get("customize",{})
+	var att: Dictionary = BHRig.attachment(rig,str(custom.get("hair_slot","head")),str(custom.get("base_head","")) if id=="base" else id,BHRig.first_view(rig))
+	return null if att.is_empty() else BHRig.texture(rig,str(att.image))
+
 func look_result(response: Dictionary) -> void:
 	Sfx.play("click" if response.ok else "hit")
 	if not response.ok:
 		toast(str(response.message))
 	open_panel("appearance")
+
+## Dev capture of the rig editor in setup, animation and eight-direction preview.
+func capture_rig(editor: BHRigEditor) -> void:
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path("res://artifacts/rig"))
+	await get_tree().create_timer(0.4).timeout
+	editor.select_bone("arm_l")
+	await capture("rig/01_bone_setup")
+	editor.set_mode("anim")
+	editor.set_clip("walk")
+	editor.select_bone("thigh_l")
+	editor.set_time(0.18)
+	await capture("rig/02_animation")
+	editor.set_mode("part")
+	editor.select_slot("head")
+	await capture("rig/03_part_setup")
+	editor.set_clip("walk")
+	editor.set_ring(true)
+	await get_tree().create_timer(0.3).timeout
+	await capture("rig/04_eight_directions")
+	get_tree().quit(0)
 
 ## Dev capture of the character creator (not part of --capture-all, which CI counts).
 func capture_look() -> void:
@@ -420,7 +455,7 @@ func capture_look() -> void:
 	await capture("look/02_creator_walk")
 	Game.replace_look({"hair":"hair_12_messy_long","cloth":4,"scarf":true,"cloak":false,"goggles":false,"cap":true,"satchel":true,"charm":false})
 	preview_walk = false
-	preview_facing = -1.0
+	preview_sector = 3
 	open_panel("appearance")
 	await get_tree().create_timer(0.4).timeout
 	await capture("look/03_creator_cap")

@@ -23,6 +23,7 @@ func run() -> void:
 	module_tests()
 	save_tests()
 	await appearance_tests()
+	await rig_editor_tests()
 	await combat_tests()
 	await hazard_tests()
 	await view3d_tests()
@@ -153,30 +154,101 @@ func appearance_tests() -> void:
 	var broken: Dictionary = parser.data.duplicate(true)
 	broken.look = {"hair":"base"}
 	check(not Game.validate_save(broken),"malformed look rejected on load")
+	var rig: Dictionary = BHRig.load_file(BHPuppet.DEFAULT_RIG)
 	var missing: Array = []
+	var custom: Dictionary = rig.get("customize",{})
 	for id in BHAppearance.hair_ids():
-		if not ResourceLoader.exists(BHPaperDoll.PART_DIR+("head_front" if id=="base" else id)+".png"):
+		var hair: String = str(custom.base_head) if id=="base" else id
+		if BHRig.attachment(rig,str(custom.hair_slot),hair,"front").is_empty():
 			missing.append(id)
-	var rig: Dictionary = BHPaperDoll.load_rig()
-	for entry in rig.get("nodes",[])+rig.get("attachments",[]):
-		if not ResourceLoader.exists(BHPaperDoll.PART_DIR+str(entry.part)+".png"):
-			missing.append(entry.part)
-	check(missing.is_empty() and rig.nodes.size()==15,"every rig part and hairstyle has a transparent PNG")
-	var doll = BHPaperDoll.new()
+	for slot in rig.slots:
+		for att_name in rig.skins.default.get(slot.name,{}):
+			for view in rig.skins.default[slot.name][att_name]:
+				if BHRig.texture(rig,str(rig.skins.default[slot.name][att_name][view].image))==null:
+					missing.append(att_name)
+	check(missing.is_empty() and rig.slots.size()==19,"every rig attachment and hairstyle has a transparent PNG")
+	check(BHRig.problems(rig).is_empty() and rig.animations.has("idle") and rig.animations.has("walk") and rig.animations.has("run"),"captain rig is well formed with idle, walk and run")
+	check(BHRig.view_for(Vector2.DOWN)==["front",false] and BHRig.view_for(Vector2.LEFT)==["side",true] and BHRig.view_for(Vector2(1,-1))==["back34",false] and BHRig.view_for(Vector2(-1,1))==["front34",true],"eight directions map to five drawn views plus mirrors")
+	check(BHRig.effective_view(rig,"side")=="front","undrawn views borrow the drawn view")
+	var keys: Array = [[0.0,0.0,"linear"],[1.0,10.0,"step"],[2.0,20.0,"linear"]]
+	check(is_equal_approx(BHRig.sample(keys,0.5,2.0,false,1)[0],5.0) and is_equal_approx(BHRig.sample(keys,1.5,2.0,false,1)[0],10.0) and is_equal_approx(BHRig.sample(keys,3.0,2.0,false,1)[0],20.0),"keyframe curves: linear, step and hold")
+	var loop_keys: Array = [[0.0,0.0,"linear"],[0.5,10.0,"linear"]]
+	check(is_equal_approx(BHRig.sample(loop_keys,0.75,1.0,true,1)[0],5.0),"looping clips wrap from the last key to the first")
+	var override_rig: Dictionary = rig.duplicate(true)
+	override_rig.views = ["front","side"]
+	override_rig.animations.walk.tracks["side"] = {"thigh_l":{"rotate":[[0.0,33.0,"linear"]]}}
+	check(is_equal_approx(BHRig.pose(override_rig,"walk","side",0.1).thigh_l.rotate,33.0) and not is_equal_approx(BHRig.pose(override_rig,"walk","front",0.1).thigh_l.rotate,33.0),"view-specific tracks override the shared clip")
+	var doll = BHPuppet.new()
 	doll.look = Game.s.look.duplicate()
 	add_child(doll)
 	await get_tree().process_frame
-	check(doll.sprites.size()==19 and doll.sprites.head.texture.resource_path.ends_with("hair_08_tied_high.png"),"paper doll builds all parts with chosen hair")
-	check(doll.sprites.cap.visible and not doll.sprites.goggles.visible,"paper doll shows only equipped gear")
+	check(doll.sprites.size()==19 and doll.sprites.head.texture.resource_path.ends_with("hair_08_tied_high.png"),"puppet builds all slots with chosen hair")
+	check(doll.sprites.cap.visible and not doll.sprites.goggles.visible,"puppet shows only equipped gear")
 	var rest_boot: Vector2 = doll.sprites.boot_l.position
 	doll.moving = true
+	doll.speed = 160.0
 	for n in range(6):
 		doll._process(0.05)
-	check(doll.sprites.boot_l.position.distance_to(rest_boot)>4.0,"walk cycle moves the legs")
+	check(doll.clip=="walk" and doll.sprites.boot_l.position.distance_to(rest_boot)>4.0,"walking plays the walk clip and moves the legs")
+	doll.speed = 265.0
+	doll._process(0.05)
+	check(doll.clip=="run" and doll.fade<1.0,"sprinting cross-fades into the run clip")
+	doll.set_direction(Vector2.LEFT)
+	doll.refresh()
+	check(doll.mirrored and doll.doll.scale.x<0.0,"walking left mirrors the side view")
 	doll.apply_look(BHAppearance.defaults())
-	check(doll.sprites.head.texture.resource_path.ends_with("head_front.png") and not doll.sprites.cap.visible,"doll swaps look live")
+	check(doll.sprites.head.texture.resource_path.ends_with("head_front.png") and not doll.sprites.cap.visible,"puppet swaps look live")
 	doll.queue_free()
+	var partial: Dictionary = rig.duplicate(true)
+	partial.views = ["front","side"]
+	partial.skins.default.head.head["side"] = partial.skins.default.head.head.front.duplicate(true)
+	var sided = BHPuppet.new()
+	sided.rig = partial
+	sided.look = Game.s.look.duplicate()
+	add_child(sided)
+	sided.set_direction(Vector2.RIGHT)
+	sided.refresh()
+	check(sided.view=="side" and sided.sprites.head.visible and sided.sprites.head.texture.resource_path.ends_with("head_front.png") and not sided.sprites.thigh_l.visible,"undrawn hairstyle falls back to the base head; parts missing in a drawn view hide")
+	sided.queue_free()
 	Game.reset(false)
+
+func rig_editor_tests() -> void:
+	var editor = BHRigEditor.new()
+	add_child(editor)
+	await get_tree().process_frame
+	editor.rig_path = "user://rig_editor_test_%d.json" % Time.get_ticks_usec()
+	check(editor.rig.bones.size()==20 and editor.puppet.sprites.size()==19,"rig editor opens the captain rig")
+	editor.set_mode("bone")
+	editor.select_bone("arm_l")
+	var before: float = float(BHRig.setup(editor.rig,editor.bones().arm_l,"front").x)
+	var joint: Vector2 = editor.to_canvas(editor.world().arm_l.origin)
+	editor.begin_drag(joint,false)
+	editor.continue_drag(joint+Vector2(17,0))
+	editor.drag = {}
+	var moved: float = float(BHRig.setup(editor.rig,editor.bones().arm_l,"front").x)-before
+	check(is_equal_approx(snappedf(moved,0.1),snappedf(17.0/editor.zoom,0.1)),"dragging a joint moves the bone in rig space")
+	editor.set_mode("anim")
+	editor.set_clip("walk")
+	editor.set_time(0.1)
+	editor.key_value("rotate",[25.0])
+	check(is_equal_approx(BHRig.pose(editor.rig,"walk","front",0.1).arm_l.rotate,25.0),"editing a pose sets a key at the current time")
+	editor.undo()
+	check(not is_equal_approx(BHRig.pose(editor.rig,"walk","front",0.1).arm_l.rotate,25.0),"undo removes the key")
+	editor.redo()
+	check(is_equal_approx(BHRig.pose(editor.rig,"walk","front",0.1).arm_l.rotate,25.0),"redo restores the key")
+	editor.set_view("side")
+	check("side" in editor.rig.views and editor.bones().thigh_l.setup.has("side"),"a new view starts as a copy of the first view")
+	editor.toggle_scope()
+	editor.select_bone("thigh_l")
+	editor.key_value("rotate",[40.0])
+	check(is_equal_approx(BHRig.pose(editor.rig,"walk","side",0.1).thigh_l.rotate,40.0) and not is_equal_approx(BHRig.pose(editor.rig,"walk","front",0.1).thigh_l.rotate,40.0),"view-only track changes one direction")
+	editor.save()
+	var saved: Dictionary = BHRig.load_file(editor.rig_path,true)
+	check("side" in saved.get("views",[]) and BHRig.problems(saved).is_empty() and not editor.dirty,"editor saves a valid rig file")
+	check(not "side" in BHRig.load_file(BHPuppet.DEFAULT_RIG).views,"editing does not touch the game's loaded rig until saved to it")
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(editor.rig_path))
+	editor.queue_free()
+	await get_tree().process_frame
 
 func save_tests() -> void:
 	Game.reset(false)

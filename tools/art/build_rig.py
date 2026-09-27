@@ -3,7 +3,8 @@
 
 Each node names a part PNG (optionally a sub-region), a joint position in rig space
 (origin = ground between the feet, y down, units = sheet pixels) and a pivot in the part's
-own pixels. The rig is written to rig.json for Godot (scripts/world/paper_doll.gd) and
+own pixels. The rig is written to rig.json (the v01 source that tools/art/migrate_rig_v2.py
+converted into the editor-owned skeletal rig) and
 rendered here at rest and mid-stride next to the sheet's assembled reference.
 """
 import json, math, sys
