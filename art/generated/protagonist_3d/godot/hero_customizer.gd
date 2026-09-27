@@ -78,7 +78,7 @@ func _apply() -> void:
 			mi.visible = weapon > 0 and n == "Weapon_%s" % WEAPONS[weapon]
 		elif n.begins_with("Acc_"):
 			for acc in ACCESSORIES:
-				if n.begins_with("Acc_" + acc):
+				if n.begins_with("Acc_" + acc.trim_suffix("s")):
 					mi.visible = accessories.get(acc, true)
 		elif n == "Head":
 			_set_expression(mi)

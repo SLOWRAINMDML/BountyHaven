@@ -293,6 +293,48 @@ for s, x in (("L", 1), ("R", -1)):
         (f"toe.{s}", (0.10 * x, -0.10, 0.025), (0.10 * x, -0.16, 0.02), f"foot.{s}", (0, 0, 1)),
     ]
 
+# fingers: 2 phalanges each, spread across the palm (palm faces the body in the A-pose)
+HAND_DIR = Vector((0.06, -0.005, -0.065)).normalized()
+FINGERS = {  # name: (spread offset along Y from the palm centre, length scale)
+    "index": (-0.022, 1.0), "middle": (-0.007, 1.08), "ring": (0.008, 1.0), "pinky": (0.022, 0.8),
+}
+for s, x in (("L", 1), ("R", -1)):
+    d = Vector((HAND_DIR.x * x, HAND_DIR.y, HAND_DIR.z))
+    knuckle = Vector((0.625 * x, -0.005, 0.995))
+    for f, (dy, k) in FINGERS.items():
+        a = knuckle + Vector((0, dy, 0))
+        b = a + d * 0.036 * k
+        c = b + d * 0.03 * k
+        BONES += [(f"{f}_01.{s}", tuple(a), tuple(b), f"hand.{s}", (0, 0, 1)),
+                  (f"{f}_02.{s}", tuple(b), tuple(c), f"{f}_01.{s}", (0, 0, 1))]
+    t0 = Vector((0.583 * x, -0.03, 1.035))
+    td = (d + Vector((0, -0.9, 0))).normalized()
+    BONES += [(f"thumb_01.{s}", tuple(t0), tuple(t0 + td * 0.034), f"hand.{s}", (0, 0, 1)),
+              (f"thumb_02.{s}", tuple(t0 + td * 0.034), tuple(t0 + td * 0.062), f"thumb_01.{s}", (0, 0, 1))]
+
+# hair: 7 two-segment chains hanging from the skull (bangs, sides, back) for secondary motion
+HAIR_CHAINS = {"front.L": 0.55, "front.R": -0.55, "side.L": 1.45, "side.R": -1.45,
+               "back.L": 2.3, "back.R": -2.3, "back.C": math.pi}
+
+
+def _hair_chain_points(theta):
+    c, r = Vector((0, -0.012, 1.6426)), Vector((0.101, 0.11, 0.115))
+    def on(phi, lift):
+        d = Vector((math.sin(phi) * math.sin(theta), -math.sin(phi) * math.cos(theta), math.cos(phi)))
+        return c + Vector((d.x * r.x, d.y * r.y, d.z * r.z)) * lift
+    root = on(math.radians(45), 1.12)
+    mid = on(math.radians(85), 1.16)
+    tip = mid + Vector((0, 0, -0.14)) + (mid - c).normalized() * 0.01
+    return root, mid, tip
+
+
+for name, th in HAIR_CHAINS.items():
+    r0, r1, r2 = _hair_chain_points(th)
+    BONES += [(f"hair_{name}_01", tuple(r0), tuple(r1), "head", FRONT),
+              (f"hair_{name}_02", tuple(r1), tuple(r2), f"hair_{name}_01", FRONT)]
+FINGER_BONES = [b[0] for b in BONES if b[0].split("_")[0] in ("index", "middle", "ring", "pinky", "thumb")]
+HAIR_BONES = [b[0] for b in BONES if b[0].startswith("hair_")]
+
 
 def build_armature(col):
     arm_data = bpy.data.armatures.new("HeroRig")
@@ -337,7 +379,7 @@ def build_body(col):
             f"shoulder{s}": ((0.19 * x, 0.01, 1.42), (0.072, 0.068)),
             f"elbow{s}": ((0.39 * x, 0.02, 1.235), (0.056, 0.054)),
             f"wrist{s}": ((0.565 * x, 0.0, 1.06), (0.043, 0.038)),
-            f"hand{s}": ((0.625 * x, -0.005, 0.995), (0.056, 0.032)),
+            f"hand{s}": ((0.605 * x, -0.004, 1.017), (0.05, 0.03)),
             f"hip{s}": ((0.097 * x, 0.0, 0.90), (0.095, 0.094)),
             f"knee{s}": ((0.10 * x, 0.005, 0.50), (0.068, 0.07)),
             f"ankle{s}": ((0.10 * x, 0.02, 0.09), (0.054, 0.056)),
@@ -390,6 +432,76 @@ def smooth_weights(obj, iters=4, keep=4):
                 obj.vertex_groups[idx[vi, k]].add([vi], float(top[vi, k]), "REPLACE")
 
 
+def build_fingers(col, arm):
+    """Each phalanx is a small capsule owned 100% by its bone (like SRPG_STD's voxel cells),
+    merged into one skinned mesh per look so it deforms without any weight blending."""
+    out = {}
+    for name, mat, pad in (("Fingers", material("skin"), 0.0), ("Acc_GloveFingers", material("leather_dark"), 0.0035)):
+        bm = bmesh.new()
+        dl = bm.verts.layers.deform.verify()
+        groups = []
+        for b in arm.data.bones:
+            if b.name not in FINGER_BONES and not b.name.startswith("hand."):
+                continue
+            gi = len(groups)
+            groups.append(b.name)
+            h, t = b.head_local, b.tail_local
+            axis = (t - h).normalized()
+            rot = Vector((0, 0, 1)).rotation_difference(axis).to_matrix().to_4x4()
+            if b.name.startswith("hand."):  # palm: flat block from wrist to knuckles, as wide as the fingers
+                side = Vector((0, 1, 0))
+                flat = axis.cross(side).normalized()
+                basis = Matrix((flat, side, axis)).transposed().to_4x4()
+                m = Matrix.Translation(h + (t - h) * 0.62) @ basis @ Matrix.Diagonal((0.021 + pad, 0.036 + pad, 0.052 + pad, 1))
+            else:
+                r = (0.0135 if b.name.startswith("thumb") else 0.0118) * (0.88 if b.name.endswith(("_02.L", "_02.R")) else 1.0) + pad
+                m = Matrix.Translation((h + t) / 2) @ rot @ Matrix.Diagonal((r, r, (t - h).length / 2 + r * 0.9, 1))
+            before = set(bm.verts)
+            bmesh.ops.create_uvsphere(bm, u_segments=8, v_segments=6, radius=1.0, matrix=m)
+            for v in bm.verts:
+                if v not in before:
+                    v[dl][gi] = 1.0
+        obj = mesh_from_bmesh(name, bm, col)
+        for g in groups:
+            obj.vertex_groups.new(name=g)
+        shade_smooth(obj)
+        set_material(obj, mat)
+        bind(obj, arm)
+        out[name] = obj
+    return out
+
+
+def skin_hair(obj, arm):
+    """Crown stays on the head; strands blend down their nearest hair chain (root -> tip)."""
+    import numpy as np
+    bones = {b.name: b for b in arm.data.bones}
+    chains = [n[len("hair_"):-3] for n in HAIR_BONES if n.endswith("_01")]
+    names = ["head"] + HAIR_BONES
+    for n in names:
+        obj.vertex_groups.new(name=n)
+    top = HEAD_C.z + HEAD_R.z * 0.55
+    for v in obj.data.vertices:
+        co = v.co
+        rel = co - HEAD_C
+        theta = math.atan2(rel.x, -rel.y)
+        ch = min(chains, key=lambda c: abs(math.remainder(theta - HAIR_CHAINS[c], 2 * math.pi)))
+        b1, b2 = bones[f"hair_{ch}_01"], bones[f"hair_{ch}_02"]
+        root_z, mid_z = b1.head_local.z, b2.head_local.z
+        if co.z >= top:
+            ws = {"head": 1.0}
+        else:
+            t = (root_z - co.z) / max(root_z - b2.tail_local.z, 1e-3)  # 0 at the root, 1 at the tip
+            t = min(max(t, 0.0), 1.0)
+            w2 = max(0.0, (t - 0.45) / 0.55) ** 1.2
+            w1 = min(1.0, t * 1.8) * (1 - w2)
+            wh = max(0.0, 1.0 - w1 - w2)
+            ws = {"head": wh, f"hair_{ch}_01": w1, f"hair_{ch}_02": w2}
+        for n, w in ws.items():
+            if w > 0.01:
+                obj.vertex_groups[n].add([v.index], w, "REPLACE")
+    bind(obj, arm)
+
+
 def build_head(col):
     bm = bmesh.new()
     bmesh.ops.create_uvsphere(bm, u_segments=24, v_segments=16, radius=1.0)
@@ -397,10 +509,10 @@ def build_head(col):
         x, y, z = v.co
         # egg shaped skull, narrower jaw, slightly flat face
         jaw = 1.0 - 0.22 * max(0.0, -z) ** 1.8
-        v.co = Vector((x * 0.11 * jaw, y * 0.12 * (0.93 if y < 0 else 1.0), z * 0.126))
+        v.co = Vector((x * 0.099 * jaw, y * 0.108 * (0.93 if y < 0 else 1.0), z * 0.1134))
         if y < -0.5 and -0.2 < z < 0.2 and abs(x) < 0.25:  # tiny nose bridge
             v.co.y -= 0.01 * (1 - abs(x) / 0.25)
-    bmesh.ops.translate(bm, verts=bm.verts, vec=Vector((0, -0.012, 1.655)))
+    bmesh.ops.translate(bm, verts=bm.verts, vec=Vector((0, -0.012, 1.6426)))
     head = mesh_from_bmesh("Head", bm, col)
     shade_smooth(head)
     return head
@@ -437,17 +549,17 @@ def build_face(col, head=None):
                 f.material_index = mat_of[name.rstrip("LR")]
 
     for s, x in (("L", 1), ("R", -1)):
-        m = Matrix.Translation(surf(0.041 * x, 1.671, 0.001)) @ Matrix.Diagonal((0.012, 0.006, 0.013, 1))
+        m = Matrix.Translation(surf(0.037 * x, 1.657, 0.001)) @ Matrix.Diagonal((0.011, 0.006, 0.012, 1))
         add(f"eye{s}", bmesh.ops.create_uvsphere, u_segments=10, v_segments=6, radius=1.0, matrix=m)
-        m = (Matrix.Translation(surf(0.043 * x, 1.684, 0.003)) @ Matrix.Rotation(math.radians(6 * x), 4, "Y")
+        m = (Matrix.Translation(surf(0.039 * x, 1.669, 0.003)) @ Matrix.Rotation(math.radians(6 * x), 4, "Y")
              @ Matrix.Diagonal((0.021, 0.005, 0.0028, 1)))
         add(f"lash{s}", bmesh.ops.create_cube, size=2.0, matrix=m)
-        m = (Matrix.Translation(surf(0.045 * x, 1.705, 0.004)) @ Matrix.Rotation(math.radians(-8 * x), 4, "Y")
+        m = (Matrix.Translation(surf(0.0405 * x, 1.688, 0.004)) @ Matrix.Rotation(math.radians(-8 * x), 4, "Y")
              @ Matrix.Diagonal((0.024, 0.006, 0.0055, 1)))
         add(f"brow{s}", bmesh.ops.create_cube, size=2.0, matrix=m)
-    m = Matrix.Translation(surf(0, 1.64, 0.003)) @ Matrix.Diagonal((0.006, 0.008, 0.012, 1))
+    m = Matrix.Translation(surf(0, 1.628, 0.003)) @ Matrix.Diagonal((0.006, 0.008, 0.012, 1))
     add("nose", bmesh.ops.create_cone, cap_ends=True, segments=4, radius1=1.0, radius2=0.2, depth=1.6, matrix=m @ Matrix.Rotation(math.radians(90), 4, "X"))
-    m = Matrix.Translation(surf(0, 1.603, 0.0)) @ Matrix.Diagonal((0.026, 0.006, 0.0035, 1))
+    m = Matrix.Translation(surf(0, 1.595, 0.0)) @ Matrix.Diagonal((0.026, 0.006, 0.0035, 1))
     add("mouth", bmesh.ops.create_uvsphere, u_segments=12, v_segments=6, radius=1.0, matrix=m)
     face = mesh_from_bmesh("Face", bm, col)
     for mt in (material("eye", textured=False, ink=True), material("brow", textured=False, ink=True),
@@ -837,10 +949,10 @@ def build_accessories(body, arm, root_col):
     for sx, x in (("L", 1), ("R", -1)):
         g = cone_mesh(f"Acc_Goggles.{sx}", col, [(0, 0.024, 0.024, 0, 0), (0.02, 0.022, 0.022, 0, 0)], 12, material("brass", metallic=0.6, roughness=0.5), close_top=True)
         g.rotation_euler = (math.radians(-70), 0, 0)
-        g.location = (0.04 * x, -0.108, 1.74)
+        g.location = (0.036 * x, -0.098, 1.718)
         gog.append(g)
-    band = ring("Acc_GogglesBand", col, 0.0, 0.122, 0.134, 0.0, 0.014, material("leather_dark"), segs=24)
-    band.location = (0, -0.012, 1.725)
+    band = ring("Acc_GogglesBand", col, 0.0, 0.11, 0.121, 0.0, 0.013, material("leather_dark"), segs=24)
+    band.location = (0, -0.012, 1.705)
     band.rotation_euler = (math.radians(-14), 0, 0)
     acc["goggles"] = [bind(o, arm, bone="head") for o in gog + [band]]
     # reinforced leather gloves
@@ -855,8 +967,8 @@ def build_accessories(body, arm, root_col):
 # --------------------------------------------------------------------------
 # Hair (rigid on the head bone): tapered, flattened clumps that follow the skull
 # --------------------------------------------------------------------------
-HEAD_C = Vector((0, -0.012, 1.655))
-HEAD_R = Vector((0.112, 0.122, 0.128))   # skull ellipsoid radii (matches build_head)
+HEAD_C = Vector((0, -0.012, 1.6426))
+HEAD_R = Vector((0.101, 0.11, 0.115))   # skull ellipsoid radii (matches build_head)
 
 
 def skull(theta, phi, lift=1.0):
@@ -1051,6 +1163,51 @@ def build_weapons(col, arm):
 #   character faces -Y, +X is its left, +Z up.
 #   +X rot: bends the spine/head forward, swings a leg BACK, bends the knee.
 # --------------------------------------------------------------------------
+def finger_pose(action, frame, frames):
+    """Right hand grips the weapon; the left hand relaxes, and makes a fist when guarding or casting."""
+    out = {}
+    fist_l = action in ("guard", "attack")
+    open_l = action in ("gadget", "victory")
+    for s, sign in (("L", 1), ("R", -1)):
+        if s == "R":
+            c1, c2, th = 75, 70, 35
+        elif fist_l:
+            c1, c2, th = 80, 75, 30
+        elif open_l:
+            c1, c2, th = 5, 5, 0
+        else:
+            c1, c2, th = 22, 25, 10
+        for f in ("index", "middle", "ring", "pinky"):
+            k = 1.0 + 0.08 * ("index", "middle", "ring", "pinky").index(f)  # outer fingers curl a bit more
+            out[f"{f}_01.{s}"] = (0, sign * c1 * k, 0)
+            out[f"{f}_02.{s}"] = (0, sign * c2 * k, 0)
+        out[f"thumb_01.{s}"] = (th * 0.4, sign * th, 0)
+        out[f"thumb_02.{s}"] = (0, sign * th * 0.8, 0)
+    return out
+
+
+HAIR_MOTION = {  # action: (swing back deg, wobble deg, cycles per clip)
+    "idle": (0, 2.0, 1), "walk": (6, 4.0, 2), "run": (16, 7.0, 2), "attack": (4, 9.0, 1.5),
+    "shoot": (0, 4.0, 1), "gadget": (0, 3.0, 1), "guard": (3, 2.5, 1), "hit": (-10, 10.0, 1.5),
+    "death": (-6, 8.0, 1), "victory": (4, 5.0, 1.5),
+}
+
+
+def hair_pose(action, frame, frames):
+    """Baked secondary motion: chains lag the body with a damped wobble (tips lag more)."""
+    swing, wob, cyc = HAIR_MOTION.get(action, (0, 2.0, 1))
+    out = {}
+    for n in HAIR_BONES:
+        ch = n[len("hair_"):-3]
+        th = HAIR_CHAINS[ch]
+        tip = n.endswith("_02")
+        phase = 2 * math.pi * cyc * (frame - 1) / max(frames, 1) - (0.9 if tip else 0.0) - th * 0.15
+        a = swing * (0.6 if tip else 0.4) + wob * math.sin(phase) * (1.3 if tip else 0.7)
+        # swing about X (front/back); side chains also flare slightly about Y
+        out[n] = (a, (a * 0.35 if "L" in ch[-1] else -a * 0.35) if "side" in ch else 0, 0)
+    return out
+
+
 class Animator:
     def __init__(self, arm):
         self.arm = arm
@@ -1063,7 +1220,9 @@ class Animator:
         return r.inverted() @ world @ r
 
     def pose(self, frame, rots, loc=None):
-        """rots: {bone: (rx, ry, rz)}; every animated bone gets a key so poses are absolute."""
+        """rots: {bone: (rx, ry, rz)}; every animated bone gets a key so poses are absolute.
+        Fingers (grip / relaxed) and hair (secondary sway) get automatic keys unless given."""
+        rots = dict(finger_pose(self._name, frame, self._frames), **hair_pose(self._name, frame, self._frames), **rots)
         for pb in self.arm.pose.bones:
             rx, ry, rz = rots.get(pb.name, (0, 0, 0))
             pb.rotation_quaternion = self.q(pb.name, rx, ry, rz)
@@ -1419,8 +1578,8 @@ def watercolor_compositor(scn):
 
 
 CAM_FULL = ((0.95, -2.9, 1.25), (0, 0, 0.93), 50)
-CAM_HAIR = ((0.55, -1.25, 1.72), (0, 0, 1.63), 85)
-CAM_FACE = ((0.12, -0.95, 1.68), (0, 0, 1.655), 110)
+CAM_HAIR = ((0.55, -1.25, 1.71), (0, 0, 1.62), 85)
+CAM_FACE = ((0.12, -0.95, 1.665), (0, 0, 1.642), 110)
 
 
 def aim(obj, target):
@@ -1472,10 +1631,12 @@ def main():
     acc_col, accessories = build_accessories(body, arm, root)
     hair_col, hair_styles = build_hair(root)
     for o in hair_styles.values():
-        bind(o, arm, bone="head")
+        skin_hair(o, arm)
+    fingers = build_fingers(body_col, arm)
     weapons = build_weapons(collection("Weapon", root), arm)
 
-    everything = ([body, head] + [x for _, items in outfits.values() for x in items] + list(hair_styles.values())
+    accessories["gloves"].append(fingers["Acc_GloveFingers"])
+    everything = ([body, head] + list(fingers.values()) + [x for _, items in outfits.values() for x in items] + list(hair_styles.values())
                   + [x for objs in accessories.values() for x in objs] + list(weapons.values()))
     for o in everything:
         smart_uv(o)
