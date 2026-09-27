@@ -1,0 +1,30 @@
+[gd_scene load_steps=5 format=3]
+
+[ext_resource type="Script" path="res://art/generated/protagonist_3d/godot/hero_preview.gd" id="1"]
+[ext_resource type="PackedScene" path="res://art/generated/protagonist_3d/exports/bountyhaven_hero.glb" id="2"]
+[ext_resource type="Script" path="res://art/generated/protagonist_3d/godot/hero_customizer.gd" id="3"]
+
+[sub_resource type="Environment" id="env"]
+background_mode = 1
+background_color = Color(0.86, 0.82, 0.74, 1)
+ambient_light_source = 2
+ambient_light_color = Color(0.62, 0.68, 0.78, 1)
+ambient_light_energy = 0.6
+
+[node name="HeroPreview" type="Node3D"]
+script = ExtResource("1")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("env")
+
+[node name="Sun" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.766, -0.413, 0.492, 0, 0.766, 0.643, -0.643, -0.492, 0.587, 0, 4, 0)
+light_color = Color(1, 0.92, 0.8, 1)
+light_energy = 1.2
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(0.949, -0.08, 0.305, 0, 0.967, 0.254, -0.316, -0.24, 0.917, 1.2, 1.6, 3.6)
+fov = 40.0
+
+[node name="Hero" parent="." instance=ExtResource("2")]
+script = ExtResource("3")

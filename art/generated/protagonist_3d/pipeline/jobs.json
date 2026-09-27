@@ -1,0 +1,67 @@
+{
+  "style": "Match the attached approved BountyHaven references, with Rust Harbor 01 as the master for visual language. Richly detailed illustrated industrial science-fiction frontier art: fine structural ink drawing, translucent painterly watercolor and pigment washes, weathered cream and rust-orange machinery, worn fabric and practical travel equipment, readable dark foreground contours, warm amber practical lamps, cool slate-blue atmospheric distance. Not photorealism, not glossy CGI, not neon cyberpunk, not voxel art, not an unrelated anime style, not medieval oil painting. No UI, no HUD, no text, no labels, no numbers, no slogans, no watermark.",
+  "refs": [],
+  "jobs": [
+    {
+      "name": "01_protagonist_turnaround",
+      "refs": [
+        "refs/BountyHaven_repo/assets/protagonist_customization/바운티헤이븐_주인공_디자인_시트.png",
+        "refs/BountyHaven_repo/assets/protagonist_customization/현상금의_하늘_주인공_의상_시트.png"
+      ],
+      "prompt": "Character model reference sheet of the BountyHaven protagonist exactly as in the attached design sheet (adult young pilot, warm brown tousled hair, weathered rust-red scarf and short ragged cloak with a compass mark, cream canvas pilot jacket with rolled sleeves and shoulder patch, dark navy undershirt, leather cross harness and belt pouches, dark grey cargo trousers with knee pads, brown buckled boots, leather gloves, satchel). Full body front view, left side view and back view side by side in a relaxed A-pose with arms 40 degrees from the body, orthographic, same ground line, plain warm cream paper background, for a 3D modeler."
+    },
+    {
+      "name": "02_look_target_3d",
+      "refs": [
+        "refs/BountyHaven_repo/assets/protagonist_customization/바운티헤이븐_주인공_디자인_시트.png",
+        "refs/BountyHaven_repo/art/reference/originals/bh_ref_01_rust_harbor_v01.png"
+      ],
+      "prompt": "Look-development target for the 3D game version of the attached protagonist: a stylized 3D character rendered with non-photorealistic shading that looks hand-drawn: brown ink contour lines, flat watercolor washes with soft pigment pooling at the edges, slate-blue shadows and warm cream light, paper grain visible. Full body three-quarter view standing on the wooden dock promenade of Rust Harbor, small scale relative to the huge harbor architecture behind him. It must read as the approved 2D illustrations translated into real-time 3D."
+    },
+    {
+      "name": "03_bg_rust_harbor_clean_plate",
+      "refs": [
+        "refs/BountyHaven_repo/art/reference/originals/bh_ref_01_rust_harbor_v01.png"
+      ],
+      "prompt": "Using the attached Rust Harbor 01 original as the composition and style master, produce a complete environment-only clean plate for a playable fixed-camera exploration scene. Preserve the harbor architecture, dock, workshop/guild/tavern entrances, the cream-and-rust personal ship and the walkable promenade. Remove every HUD panel, compass, action prompt and readable sign text. Remove the protagonist and all people; reconstruct the ground and structures behind them. No frames or collage."
+    },
+    {
+      "name": "04_bg_space_pursuit_clean_plate",
+      "refs": [
+        "refs/BountyHaven_repo/art/reference/originals/bh_ref_01_rust_harbor_v01.png",
+        "refs/BountyHaven_repo/art/reference/originals/bh_ref_07_pursuit_zone_v01.png"
+      ],
+      "prompt": "Using master 01 for drawing language and the attached Pursuit Zone 07 for space and ship atmosphere, produce an environment-only space clean plate: the Shattered Reach asteroid field between monumental orbital scaffold structures, a large pale planet and moon, drifting rock clusters, cold blue space with warm sunlight. No ships, no HUD, no lasers, no text."
+    },
+    {
+      "name": "05_battle_boarding",
+      "refs": [
+        "refs/BountyHaven_repo/assets/protagonist_customization/바운티헤이븐_주인공_디자인_시트.png",
+        "refs/BountyHaven_repo/art/reference/originals/bh_ref_01_rust_harbor_v01.png",
+        "refs/BountyHaven_repo/art/reference/originals/bh_ref_07_pursuit_zone_v01.png"
+      ],
+      "prompt": "Illustrated battle scene: the attached protagonist boards a fugitive freighter and fights inside its cramped industrial cargo corridor, dodging a shot while swinging a short stun baton at an armored smuggler, sparks, flickering amber work lamps, pipes and hanging chains, rust-orange and cream machinery, his red scarf flying. Dynamic diagonal composition, readable characters."
+    },
+    {
+      "name": "06_battle_space_pursuit",
+      "refs": [
+        "refs/BountyHaven_repo/art/reference/originals/bh_ref_07_pursuit_zone_v01.png",
+        "refs/BountyHaven_repo/art/reference/originals/bh_ref_01_rust_harbor_v01.png"
+      ],
+      "prompt": "Illustrated space battle scene in the same style: the cream-and-rust-orange personal ship from the reference chases a boxy fugitive freighter through the asteroid field, firing an ion harpoon cable, engine glows, debris and blue shield shimmer, orbital scaffold structures in the distance. No HUD, no target markers, no hull lettering."
+    },
+    {
+      "name": "07_bg_night_port",
+      "refs": [
+        "refs/BountyHaven_repo/art/reference/originals/bh_ref_01_rust_harbor_v01.png",
+        "refs/BountyHaven_repo/art/reference/originals/bh_ref_17_moonwake_relay_v01.png"
+      ],
+      "prompt": "Using master 01 for drawing language and the attached Moonwake Relay 17 for night mood, produce an environment-only clean plate of a rainy night port promenade: wet reflective deck planks, warm amber windows and lamps, cool blue ambient light, industrial cranes and walkways, puddles. No people, no HUD, no sign text."
+    },
+    {
+      "name": "08_watercolor_paper_texture",
+      "refs": [],
+      "prompt": "Seamless tileable texture filling the whole square, flat and evenly lit: cold-pressed watercolor paper grain with very light translucent pigment wash blooms and granulation in neutral warm-white to light grey tones, subtle value variation only, no dark stains, no objects, no border, no vignette. For multiplying over 3D game materials."
+    }
+  ]
+}
