@@ -164,10 +164,13 @@ def register(painted_path, render_rgba, dest, edit=False):
     dest.parent.mkdir(parents=True, exist_ok=True)
     p = Image.open(painted_path).convert("RGB")
     corners = [p.getpixel(xy) for xy in ((0, 0), (p.width - 1, 0), (0, p.height - 1), (p.width - 1, p.height - 1))]
-    if all(max(c) < 40 for c in corners):  # the model sometimes returns a black backdrop
+    pts = ((0, 0), (p.width - 1, 0), (0, p.height - 1), (p.width - 1, p.height - 1), (p.width // 2, 0))
+    dark = [xy for xy in pts if max(p.getpixel(xy)) < 40]
+    if len(dark) >= 2:  # the model sometimes returns a black backdrop (shoulders may cover some corners)
         from PIL import ImageDraw
-        for xy in ((0, 0), (p.width - 1, 0), (0, p.height - 1), (p.width - 1, p.height - 1)):
-            ImageDraw.floodfill(p, xy, (255, 255, 255), thresh=30)
+        for xy in dark:
+            if max(p.getpixel(xy)) < 40:
+                ImageDraw.floodfill(p, xy, (255, 255, 255), thresh=70)
     W, H = render_rgba.size
     if edit:  # edits keep the neutral face's registered framing: just match the canvas
         fill_silhouette(p.resize((W, H), Image.LANCZOS), render_rgba).save(dest)

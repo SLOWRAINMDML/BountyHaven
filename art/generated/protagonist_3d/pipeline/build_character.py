@@ -322,7 +322,7 @@ HAIR_CHAINS = {"front.C": 0.0, "front.L": 0.55, "front.R": -0.55, "side.L": 1.45
 
 
 def _hair_chain_points(theta):
-    c, r = Vector((0, -0.012, 1.643)), Vector((0.094, 0.104, 0.108))
+    c, r = Vector((0, -0.006, 1.643)), Vector((0.094, 0.112, 0.112))
     def on(phi, lift):
         d = Vector((math.sin(phi) * math.sin(theta), -math.sin(phi) * math.cos(theta), math.cos(phi)))
         return c + Vector((d.x * r.x, d.y * r.y, d.z * r.z)) * lift
@@ -374,7 +374,7 @@ def build_body(col):
         "chest": ((0, 0.0, 1.27), (0.175, 0.11)),
         "upper_chest": ((0, 0.0, 1.38), (0.195, 0.105)),
         "neck": ((0, -0.005, 1.47), (0.05, 0.05)),
-        "neck_top": ((0, -0.008, 1.545), (0.045, 0.047)),
+        "neck_top": ((0, 0.004, 1.585), (0.045, 0.047)),
     }
     E = [("pelvis", "waist"), ("waist", "chest"), ("chest", "upper_chest"),
          ("upper_chest", "neck"), ("neck", "neck_top")]
@@ -507,18 +507,79 @@ def skin_hair(obj, arm):
     bind(obj, arm)
 
 
+# Head profile measured from a reference anime-style head (chin -> crown), metres, character faces -Y.
+# t: 0 chin .. 1 crown;  front: face-plane depth (no nose);  back: skull/jaw back;  w: half width
+HEAD_PROFILE = [
+    # t     front    back     w
+    (0.00, -0.088, -0.060, 0.012),
+    (0.05, -0.092, -0.033, 0.026),
+    (0.10, -0.096, -0.004, 0.038),
+    (0.16, -0.099,  0.022, 0.047),
+    (0.22, -0.101,  0.042, 0.055),
+    (0.30, -0.102,  0.060, 0.062),
+    (0.38, -0.102,  0.073, 0.067),
+    (0.46, -0.104,  0.082, 0.071),
+    (0.55, -0.106,  0.088, 0.074),
+    (0.64, -0.106,  0.092, 0.075),
+    (0.72, -0.105,  0.093, 0.075),
+    (0.80, -0.101,  0.090, 0.072),
+    (0.87, -0.092,  0.082, 0.066),
+    (0.93, -0.074,  0.066, 0.054),
+    (0.97, -0.050,  0.045, 0.036),
+    (1.00, -0.015,  0.015, 0.010),
+]
+HEAD_CHIN_Z, HEAD_CROWN_Z = 1.535, 1.745
+NOSE = (0.30, 0.38, 0.017)   # t range of the nose ridge and its tip height above the face plane
+
+
 def build_head(col):
+    """Lofted head following the measured side profile: flat forehead, set-back eyes, small nose,
+    forward chin, jaw that angles back under the ear, and a round occiput behind the neck."""
+    def lerp_profile(t):
+        for (t0, *a0), (t1, *a1) in zip(HEAD_PROFILE, HEAD_PROFILE[1:]):
+            if t <= t1:
+                k = (t - t0) / (t1 - t0)
+                return [x0 + (x1 - x0) * k for x0, x1 in zip(a0, a1)]
+        return list(HEAD_PROFILE[-1][1:])
+
     bm = bmesh.new()
-    bmesh.ops.create_uvsphere(bm, u_segments=24, v_segments=16, radius=1.0)
-    for v in bm.verts:
-        x, y, z = v.co
-        # egg shaped skull, narrower jaw, slightly flat face
-        jaw = 1.0 - 0.22 * max(0.0, -z) ** 1.8
-        v.co = Vector((x * 0.084 * jaw, y * 0.097 * (0.93 if y < 0 else 1.0), z * 0.103))
-        if y < -0.5 and -0.2 < z < 0.2 and abs(x) < 0.25:  # tiny nose bridge
-            v.co.y -= 0.01 * (1 - abs(x) / 0.25)
-    bmesh.ops.translate(bm, verts=bm.verts, vec=Vector((0, -0.012, 1.643)))
+    rows, N = 28, 32
+    rings = []
+    for i in range(rows + 1):
+        t = i / rows
+        front, back, w = lerp_profile(t)
+        z = HEAD_CHIN_Z + (HEAD_CROWN_Z - HEAD_CHIN_Z) * t
+        yc = (front + back) / 2
+        ring = []
+        for j in range(N):
+            a = 2 * math.pi * j / N
+            c, sn = math.cos(a), math.sin(a)
+            # squarer at the face (cheeks), rounder at the back of the skull
+            e = 0.75 if c > 0 else 0.95
+            cc = math.copysign(abs(c) ** e, c)
+            ss = math.copysign(abs(sn) ** e, sn)
+            y = yc + (front - yc) * cc if c > 0 else yc + (back - yc) * (-cc)
+            x = w * ss
+            # nose: a narrow ridge on the centre line, peaking at the tip
+            if c > 0 and NOSE[0] - 0.08 < t < NOSE[1] + 0.02:
+                k = math.exp(-((t - NOSE[0]) / 0.06) ** 2) if t < NOSE[0] else max(0.0, 1 - (t - NOSE[0]) / 0.1)
+                k *= 0.35 + 0.65 * max(0.0, 1 - (NOSE[1] - t) / 0.12) if t < NOSE[1] else 1.0
+                y -= NOSE[2] * k * math.exp(-(x / 0.009) ** 2)
+            # soft eye sockets beside the nose bridge
+            if c > 0 and 0.40 < t < 0.56:
+                y += 0.004 * math.exp(-((abs(x) - 0.03) / 0.014) ** 2) * math.sin(math.pi * (t - 0.40) / 0.16)
+            ring.append(bm.verts.new((x, y, z)))
+        rings.append(ring)
+    for r0, r1 in zip(rings, rings[1:]):
+        for j in range(N):
+            bm.faces.new((r0[j], r0[(j + 1) % N], r1[(j + 1) % N], r1[j]))
+    bm.faces.new(list(reversed(rings[0])))
+    bm.faces.new(rings[-1])
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
     head = mesh_from_bmesh("Head", bm, col)
+    sub = head.modifiers.new("Subsurf", "SUBSURF")
+    sub.levels = 1
+    apply_modifiers(head)
     shade_smooth(head)
     return head
 
@@ -973,8 +1034,8 @@ def build_accessories(body, arm, root_col):
 # --------------------------------------------------------------------------
 # Hair (rigid on the head bone): tapered, flattened clumps that follow the skull
 # --------------------------------------------------------------------------
-HEAD_C = Vector((0, -0.012, 1.643))
-HEAD_R = Vector((0.094, 0.104, 0.108))   # hair frame around the skull (skull itself: 0.084 x 0.097 x 0.103)
+HEAD_C = Vector((0, -0.006, 1.643))
+HEAD_R = Vector((0.094, 0.112, 0.112))   # hair frame around the skull (skull itself: 0.084 x 0.097 x 0.103)
 
 
 def skull(theta, phi, lift=1.0):

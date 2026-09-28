@@ -2,19 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://btkjk0eesm0wx"
-path="res://.godot/imported/bountyhaven_hero_hair_windswept.jpg-d1094ab2eda0e621f2ad1b0a9582f90f.ctex"
+uid="uid://vbcrrlb85pjc"
+path="res://.godot/imported/sheet_profile.png-73c98674464605175ba9ace52eeb1b92.ctex"
 metadata={
 "vram_texture": false
-}
-generator_parameters={
-"md5": "3173d0d5bfd397fcef02f363bebe473b"
 }
 
 [deps]
 
-source_file="res://art/generated/protagonist_3d/exports/bountyhaven_hero_hair_windswept.jpg"
-dest_files=["res://.godot/imported/bountyhaven_hero_hair_windswept.jpg-d1094ab2eda0e621f2ad1b0a9582f90f.ctex"]
+source_file="res://art/generated/protagonist_3d/previews/sheet_profile.png"
+dest_files=["res://.godot/imported/sheet_profile.png-73c98674464605175ba9ace52eeb1b92.ctex"]
 
 [params]
 
@@ -26,7 +23,7 @@ compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
 compress/normal_map=0
 compress/channel_pack=0
-mipmaps/generate=true
+mipmaps/generate=false
 mipmaps/limit=-1
 roughness/mode=0
 roughness/src_normal=""
