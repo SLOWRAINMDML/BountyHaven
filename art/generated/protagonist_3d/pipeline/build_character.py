@@ -283,37 +283,41 @@ BONES = [
 ]
 for s, x in (("L", 1), ("R", -1)):
     BONES += [
-        (f"shoulder.{s}", (0.03 * x, 0, 1.42), (0.19 * x, 0.01, 1.43), "chest", FRONT),
-        (f"upper_arm.{s}", (0.19 * x, 0.01, 1.43), (0.39 * x, 0.02, 1.235), f"shoulder.{s}", FRONT),
-        (f"forearm.{s}", (0.39 * x, 0.02, 1.235), (0.565 * x, 0.0, 1.06), f"upper_arm.{s}", FRONT),
-        (f"hand.{s}", (0.565 * x, 0.0, 1.06), (0.625 * x, -0.005, 0.995), f"forearm.{s}", FRONT),
-        (f"thigh.{s}", (0.095 * x, 0, 0.93), (0.10 * x, 0.005, 0.50), "hips", BACK),
-        (f"shin.{s}", (0.10 * x, 0.005, 0.50), (0.10 * x, 0.02, 0.085), f"thigh.{s}", BACK),
+        (f"shoulder.{s}", (0.03 * x, 0, 1.42), (0.17 * x, 0.01, 1.43), "chest", FRONT),
+        (f"upper_arm.{s}", (0.17 * x, 0.01, 1.43), (0.37 * x, 0.02, 1.235), f"shoulder.{s}", FRONT),
+        (f"forearm.{s}", (0.37 * x, 0.02, 1.235), (0.545 * x, 0.0, 1.06), f"upper_arm.{s}", FRONT),
+        (f"hand.{s}", (0.545 * x, 0.0, 1.06), (0.605 * x, -0.005, 0.995), f"forearm.{s}", FRONT),
+        (f"thigh.{s}", (0.095 * x, 0, 0.93), (0.10 * x, 0.005, 0.53), "hips", BACK),
+        (f"shin.{s}", (0.10 * x, 0.005, 0.53), (0.10 * x, 0.02, 0.085), f"thigh.{s}", BACK),
         (f"foot.{s}", (0.10 * x, 0.02, 0.085), (0.10 * x, -0.10, 0.025), f"shin.{s}", (0, 0, 1)),
         (f"toe.{s}", (0.10 * x, -0.10, 0.025), (0.10 * x, -0.16, 0.02), f"foot.{s}", (0, 0, 1)),
     ]
 
 # fingers: 2 phalanges each, spread across the palm (palm faces the body in the A-pose)
 HAND_DIR = Vector((0.06, -0.005, -0.065)).normalized()
-FINGERS = {  # name: (spread offset along Y from the palm centre, length scale)
-    "index": (-0.022, 1.0), "middle": (-0.007, 1.08), "ring": (0.008, 1.0), "pinky": (0.022, 0.8),
+FINGERS = {  # name: (spread along Y, knuckle set-back along the hand, length scale)
+    "index": (-0.022, 0.0, 1.0), "middle": (-0.007, -0.003, 1.08), "ring": (0.008, 0.004, 1.0), "pinky": (0.022, 0.014, 0.8),
 }
+PHALANX = (0.032, 0.023, 0.018)
 for s, x in (("L", 1), ("R", -1)):
     d = Vector((HAND_DIR.x * x, HAND_DIR.y, HAND_DIR.z))
-    knuckle = Vector((0.625 * x, -0.005, 0.995))
-    for f, (dy, k) in FINGERS.items():
-        a = knuckle + Vector((0, dy, 0))
-        b = a + d * 0.036 * k
-        c = b + d * 0.03 * k
-        BONES += [(f"{f}_01.{s}", tuple(a), tuple(b), f"hand.{s}", (0, 0, 1)),
-                  (f"{f}_02.{s}", tuple(b), tuple(c), f"{f}_01.{s}", (0, 0, 1))]
-    t0 = Vector((0.583 * x, -0.03, 1.035))
+    knuckle = Vector((0.605 * x, -0.005, 0.995))
+    for f, (dy, back, k) in FINGERS.items():
+        a = knuckle + Vector((0, dy, 0)) - d * back
+        parent = f"hand.{s}"
+        for i, seg in enumerate(PHALANX, 1):
+            b = a + d * seg * k
+            BONES.append((f"{f}_0{i}.{s}", tuple(a), tuple(b), parent, (0, 0, 1)))
+            parent, a = f"{f}_0{i}.{s}", b
+    t = Vector((0.555 * x, -0.022, 1.045))
     td = (d + Vector((0, -0.9, 0))).normalized()
-    BONES += [(f"thumb_01.{s}", tuple(t0), tuple(t0 + td * 0.034), f"hand.{s}", (0, 0, 1)),
-              (f"thumb_02.{s}", tuple(t0 + td * 0.034), tuple(t0 + td * 0.062), f"thumb_01.{s}", (0, 0, 1))]
+    parent = f"hand.{s}"
+    for i, seg in enumerate((0.024, 0.022, 0.018), 1):
+        BONES.append((f"thumb_0{i}.{s}", tuple(t), tuple(t + td * seg), parent, (0, 0, 1)))
+        parent, t = f"thumb_0{i}.{s}", t + td * seg
 
-# hair: 7 two-segment chains hanging from the skull (bangs, sides, back) for secondary motion
-HAIR_CHAINS = {"front.L": 0.55, "front.R": -0.55, "side.L": 1.45, "side.R": -1.45,
+# hair: 8 three-segment chains (bangs, side locks, back) for secondary motion
+HAIR_CHAINS = {"front.C": 0.0, "front.L": 0.55, "front.R": -0.55, "side.L": 1.45, "side.R": -1.45,
                "back.L": 2.3, "back.R": -2.3, "back.C": math.pi}
 
 
@@ -322,16 +326,16 @@ def _hair_chain_points(theta):
     def on(phi, lift):
         d = Vector((math.sin(phi) * math.sin(theta), -math.sin(phi) * math.cos(theta), math.cos(phi)))
         return c + Vector((d.x * r.x, d.y * r.y, d.z * r.z)) * lift
-    root = on(math.radians(45), 1.12)
-    mid = on(math.radians(85), 1.16)
-    tip = mid + Vector((0, 0, -0.14)) + (mid - c).normalized() * 0.01
-    return root, mid, tip
+    p0, p1, p2 = on(math.radians(40), 1.12), on(math.radians(70), 1.15), on(math.radians(98), 1.17)
+    return p0, p1, p2, p2 + Vector((0, 0, -0.12)) + (p2 - c).normalized() * 0.01
 
 
 for name, th in HAIR_CHAINS.items():
-    r0, r1, r2 = _hair_chain_points(th)
-    BONES += [(f"hair_{name}_01", tuple(r0), tuple(r1), "head", FRONT),
-              (f"hair_{name}_02", tuple(r1), tuple(r2), f"hair_{name}_01", FRONT)]
+    pts = _hair_chain_points(th)
+    parent = "head"
+    for i in range(3):
+        BONES.append((f"hair_{name}_0{i + 1}", tuple(pts[i]), tuple(pts[i + 1]), parent, FRONT))
+        parent = f"hair_{name}_0{i + 1}"
 FINGER_BONES = [b[0] for b in BONES if b[0].split("_")[0] in ("index", "middle", "ring", "pinky", "thumb")]
 HAIR_BONES = [b[0] for b in BONES if b[0].startswith("hair_")]
 
@@ -376,12 +380,12 @@ def build_body(col):
          ("upper_chest", "neck"), ("neck", "neck_top")]
     for s, x in (("L", 1), ("R", -1)):
         J.update({
-            f"shoulder{s}": ((0.19 * x, 0.01, 1.42), (0.072, 0.068)),
-            f"elbow{s}": ((0.39 * x, 0.02, 1.235), (0.056, 0.054)),
-            f"wrist{s}": ((0.565 * x, 0.0, 1.06), (0.043, 0.038)),
-            f"hand{s}": ((0.605 * x, -0.004, 1.017), (0.05, 0.03)),
+            f"shoulder{s}": ((0.17 * x, 0.01, 1.42), (0.072, 0.068)),
+            f"elbow{s}": ((0.37 * x, 0.02, 1.235), (0.056, 0.054)),
+            f"wrist{s}": ((0.545 * x, 0.0, 1.06), (0.043, 0.038)),
+            f"hand{s}": ((0.585 * x, -0.004, 1.017), (0.05, 0.03)),
             f"hip{s}": ((0.097 * x, 0.0, 0.90), (0.095, 0.094)),
-            f"knee{s}": ((0.10 * x, 0.005, 0.50), (0.068, 0.07)),
+            f"knee{s}": ((0.10 * x, 0.005, 0.53), (0.068, 0.07)),
             f"ankle{s}": ((0.10 * x, 0.02, 0.09), (0.054, 0.056)),
             f"toe{s}": ((0.10 * x, -0.155, 0.04), (0.058, 0.042)),
         })
@@ -454,7 +458,7 @@ def build_fingers(col, arm):
                 basis = Matrix((flat, side, axis)).transposed().to_4x4()
                 m = Matrix.Translation(h + (t - h) * 0.62) @ basis @ Matrix.Diagonal((0.021 + pad, 0.036 + pad, 0.052 + pad, 1))
             else:
-                r = (0.0135 if b.name.startswith("thumb") else 0.0118) * (0.88 if b.name.endswith(("_02.L", "_02.R")) else 1.0) + pad
+                r = (0.0135 if b.name.startswith("thumb") else 0.0118) * {"1": 1.0, "2": 0.9, "3": 0.8}[b.name.split(".")[0][-1]] + pad
                 m = Matrix.Translation((h + t) / 2) @ rot @ Matrix.Diagonal((r, r, (t - h).length / 2 + r * 0.9, 1))
             before = set(bm.verts)
             bmesh.ops.create_uvsphere(bm, u_segments=8, v_segments=6, radius=1.0, matrix=m)
@@ -475,7 +479,7 @@ def skin_hair(obj, arm):
     """Crown stays on the head; strands blend down their nearest hair chain (root -> tip)."""
     import numpy as np
     bones = {b.name: b for b in arm.data.bones}
-    chains = [n[len("hair_"):-3] for n in HAIR_BONES if n.endswith("_01")]
+    chains = list(HAIR_CHAINS)
     names = ["head"] + HAIR_BONES
     for n in names:
         obj.vertex_groups.new(name=n)
@@ -485,17 +489,18 @@ def skin_hair(obj, arm):
         rel = co - HEAD_C
         theta = math.atan2(rel.x, -rel.y)
         ch = min(chains, key=lambda c: abs(math.remainder(theta - HAIR_CHAINS[c], 2 * math.pi)))
-        b1, b2 = bones[f"hair_{ch}_01"], bones[f"hair_{ch}_02"]
-        root_z, mid_z = b1.head_local.z, b2.head_local.z
+        segs = [bones[f"hair_{ch}_0{i}"] for i in (1, 2, 3)]
+        root_z, tip_z = segs[0].head_local.z, segs[-1].tail_local.z
         if co.z >= top:
             ws = {"head": 1.0}
         else:
-            t = (root_z - co.z) / max(root_z - b2.tail_local.z, 1e-3)  # 0 at the root, 1 at the tip
-            t = min(max(t, 0.0), 1.0)
-            w2 = max(0.0, (t - 0.45) / 0.55) ** 1.2
-            w1 = min(1.0, t * 1.8) * (1 - w2)
-            wh = max(0.0, 1.0 - w1 - w2)
-            ws = {"head": wh, f"hair_{ch}_01": w1, f"hair_{ch}_02": w2}
+            t = min(max((root_z - co.z) / max(root_z - tip_z, 1e-3), 0.0), 1.0)  # 0 root .. 1 tip
+            # tent weights centred on each segment, head keeps the part near the scalp
+            centres = (0.2, 0.55, 0.9)
+            raw = {f"hair_{ch}_0{i + 1}": max(0.0, 1 - abs(t - c) / 0.35) for i, c in enumerate(centres)}
+            raw["head"] = max(0.0, 1 - t / 0.25)
+            tot = sum(raw.values()) or 1.0
+            ws = {k: v / tot for k, v in raw.items()}
         for n, w in ws.items():
             if w > 0.01:
                 obj.vertex_groups[n].add([v.index], w, "REPLACE")
@@ -627,7 +632,7 @@ def dominant_groups(obj):
 
 
 ARM_DIR = Vector((0.712, -0.019, -0.702))
-SHOULDER = Vector((0.19, 0.01, 1.43))
+SHOULDER = Vector((0.17, 0.01, 1.43))
 
 
 def along_arm(co):
@@ -846,7 +851,7 @@ def build_outfits(body, arm, root_col):
             bs.location = (0.10 * x, 0.02, 0.24)
             items.append(bind(bs, arm, bone=f"shin.{sx}"))
             if knee_pads:
-                items.append(ellipsoid(f"{prefix}_KneePad.{sx}", col, (0.064, 0.035, 0.072), (0.10 * x, -0.075, 0.5), dark, segs=(12, 8)))
+                items.append(ellipsoid(f"{prefix}_KneePad.{sx}", col, (0.064, 0.035, 0.072), (0.10 * x, -0.075, 0.53), dark, segs=(12, 8)))
             if cargo:  # thigh cargo pocket with flap on the outer thigh
                 items.append(bind(box(f"{prefix}_ThighPocket.{sx}", col, (0.05, 0.12, 0.13), (0.225 * x, -0.01, 0.68), material(trouser), bevel=0.012), arm, bone=f"thigh.{sx}"))
                 items.append(bind(box(f"{prefix}_ThighFlap.{sx}", col, (0.055, 0.125, 0.04), (0.23 * x, -0.01, 0.74), dark, bevel=0.008), arm, bone=f"thigh.{sx}"))
@@ -942,7 +947,7 @@ def build_accessories(body, arm, root_col):
     # field satchel on the right hip with a strap over the left shoulder
     bag = box("Acc_Satchel", col, (0.06, 0.15, 0.13), (-0.19, 0.02, 0.92), leather, bevel=0.012)
     flap = box("Acc_SatchelFlap", col, (0.066, 0.152, 0.06), (-0.195, 0.02, 0.965), material("leather_dark"), bevel=0.008)
-    bstrap = strap("Acc_SatchelStrap", col, (0.15, 0.0, 1.44), (-0.18, 0.02, 0.98), 0.024, 0.01, leather, lift=0.0)
+    bstrap = strap("Acc_SatchelStrap", col, (0.14, 0.0, 1.44), (-0.18, 0.02, 0.98), 0.024, 0.01, leather, lift=0.0)
     acc["satchel"] = [bind(bag, arm, bone="hips"), bind(flap, arm, bone="hips"), bind(bstrap, arm, body=body)]
     # goggles resting on the forehead
     gog = []
@@ -1126,7 +1131,7 @@ def build_weapons(col, arm):
     steel = material("steel", metallic=0.6, roughness=0.55)
     brass = material("brass", metallic=0.6, roughness=0.5)
     grip = material("leather_dark")
-    hand = Vector((-0.605, -0.03, 1.015))
+    hand = Vector((-0.585, -0.03, 1.015))
 
     bm = bmesh.new()
     bmesh.ops.create_cone(bm, cap_ends=True, segments=10, radius1=0.018, radius2=0.018, depth=0.14, matrix=Matrix.Translation((0, 0, 0)))
@@ -1181,8 +1186,10 @@ def finger_pose(action, frame, frames):
             k = 1.0 + 0.08 * ("index", "middle", "ring", "pinky").index(f)  # outer fingers curl a bit more
             out[f"{f}_01.{s}"] = (0, sign * c1 * k, 0)
             out[f"{f}_02.{s}"] = (0, sign * c2 * k, 0)
+            out[f"{f}_03.{s}"] = (0, sign * c2 * 0.8 * k, 0)
         out[f"thumb_01.{s}"] = (th * 0.4, sign * th, 0)
         out[f"thumb_02.{s}"] = (0, sign * th * 0.8, 0)
+        out[f"thumb_03.{s}"] = (0, sign * th * 0.6, 0)
     return out
 
 
@@ -1198,13 +1205,12 @@ def hair_pose(action, frame, frames):
     swing, wob, cyc = HAIR_MOTION.get(action, (0, 2.0, 1))
     out = {}
     for n in HAIR_BONES:
-        ch = n[len("hair_"):-3]
+        ch, k = n[len("hair_"):-3], int(n[-1]) - 1  # k: 0 root .. 2 tip
         th = HAIR_CHAINS[ch]
-        tip = n.endswith("_02")
-        phase = 2 * math.pi * cyc * (frame - 1) / max(frames, 1) - (0.9 if tip else 0.0) - th * 0.15
-        a = swing * (0.6 if tip else 0.4) + wob * math.sin(phase) * (1.3 if tip else 0.7)
-        # swing about X (front/back); side chains also flare slightly about Y
-        out[n] = (a, (a * 0.35 if "L" in ch[-1] else -a * 0.35) if "side" in ch else 0, 0)
+        phase = 2 * math.pi * cyc * (frame - 1) / max(frames, 1) - 0.6 * k - th * 0.15
+        a = swing * (0.35 + 0.2 * k) + wob * math.sin(phase) * (0.6 + 0.4 * k)
+        side = (a * 0.3 if ch.endswith("L") else -a * 0.3) if ch.startswith("side") else 0
+        out[n] = (a, side, 0)
     return out
 
 
