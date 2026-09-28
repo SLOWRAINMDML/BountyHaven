@@ -2,19 +2,19 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://b6ycqftklosmw"
-path="res://.godot/imported/bountyhaven_hero_body_guild.jpg-d2b7eae9d784d49d2eb8ac1d37fd7e47.ctex"
+uid="uid://ccqshfkycl1mc"
+path="res://.godot/imported/bountyhaven_hero_08_watercolor_paper_texture_512.png-1c0474b758cb693048e76adb5165c3b4.ctex"
 metadata={
 "vram_texture": false
 }
 generator_parameters={
-"md5": "5376609d2d236016cc4625df8c9ee192"
+"md5": "6b0a5bd4100a7c44d3bc81077037bceb"
 }
 
 [deps]
 
-source_file="res://art/generated/protagonist_3d/exports/bountyhaven_hero_body_guild.jpg"
-dest_files=["res://.godot/imported/bountyhaven_hero_body_guild.jpg-d2b7eae9d784d49d2eb8ac1d37fd7e47.ctex"]
+source_file="res://art/generated/protagonist_3d/exports/bountyhaven_hero_08_watercolor_paper_texture_512.png"
+dest_files=["res://.godot/imported/bountyhaven_hero_08_watercolor_paper_texture_512.png-1c0474b758cb693048e76adb5165c3b4.ctex"]
 
 [params]
 

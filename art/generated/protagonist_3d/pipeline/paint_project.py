@@ -131,6 +131,72 @@ def skin_patch_uv(obj, frame):
             me.uv_layers.remove(layer)
 
 
+SKIN_TONE = (240, 205, 176)  # sRGB, light warm skin close to the ZZZ references
+
+
+def build_face_decal(head, img):
+    """Front-facing copy of the head skin, a hair's breadth above it, UV'd in the face-paint framing."""
+    import bmesh
+    old = bpy.data.objects.get("FaceDecal")
+    if old:
+        bpy.data.objects.remove(old)
+    dec = head.copy()
+    dec.data = head.data.copy()
+    dec.name = dec.data.name = "FaceDecal"
+    for c in head.users_collection:
+        c.objects.link(dec)
+    for m in list(dec.modifiers):
+        dec.modifiers.remove(m)
+    bm = bmesh.new()
+    bm.from_mesh(dec.data)
+    bm.normal_update()
+    bmesh.ops.delete(bm, geom=[f for f in bm.faces if f.normal.y > -0.2 or f.calc_center_median().z > 1.735], context="FACES")
+    for v in bm.verts:
+        v.co += v.normal * 0.0012
+    bm.to_mesh(dec.data)
+    bm.free()
+    me = dec.data
+    for layer in list(me.uv_layers):
+        me.uv_layers.remove(layer)
+    uv = me.uv_layers.new(name="UVMap")
+    for p in me.polygons:
+        for li in p.loop_indices:
+            co = me.vertices[me.loops[li].vertex_index].co
+            u, v = image_uv(co, HEAD_FRAME, "front")
+            uv.data[li].uv = (u, v)
+    mat = bpy.data.materials.get("M_face_decal") or bpy.data.materials.new("M_face_decal")
+    mat.use_nodes = True
+    nt = mat.node_tree
+    for n in list(nt.nodes):
+        nt.nodes.remove(n)
+    out = nt.nodes.new("ShaderNodeOutputMaterial")
+    tex = nt.nodes.new("ShaderNodeTexImage")
+    tex.name = "PaintTex"
+    tex.image = img
+    bsdf = nt.nodes.new("ShaderNodeBsdfPrincipled")
+    bsdf.name = "Principled BSDF"
+    bsdf.inputs["Roughness"].default_value = 1.0
+    nt.links.new(tex.outputs["Color"], bsdf.inputs["Base Color"])
+    nt.links.new(tex.outputs["Alpha"], bsdf.inputs["Alpha"])
+    # NPR branch: ink features unlit, transparent elsewhere
+    em = nt.nodes.new("ShaderNodeEmission")
+    tr = nt.nodes.new("ShaderNodeBsdfTransparent")
+    mix = nt.nodes.new("ShaderNodeMixShader")
+    mix.name = "NPR"
+    nt.links.new(tex.outputs["Color"], em.inputs["Color"])
+    nt.links.new(tex.outputs["Alpha"], mix.inputs[0])
+    nt.links.new(tr.outputs[0], mix.inputs[1])
+    nt.links.new(em.outputs[0], mix.inputs[2])
+    nt.links.new(mix.outputs[0], out.inputs["Surface"])
+    try:
+        mat.surface_render_method = "BLENDED"
+    except Exception:
+        pass
+    me.materials.clear()
+    me.materials.append(mat)
+    return dec
+
+
 def objects_for_pass(kind, key):
     objs = bpy.data.objects
     if kind == "body":
@@ -225,7 +291,7 @@ def assign(obj, mat):
 def do_apply():
     rest_pose()
     for im in list(bpy.data.images):  # previous atlases: rebuilt below from the current paint
-        if im.name.split(".")[0].startswith(("head_", "body_", "hair_", "face_")):
+        if im.name.split(".")[0].startswith(("head_", "body_", "hair_", "face_")) and im.name != "hair_band":
             bpy.data.images.remove(im)
     for m in list(bpy.data.materials):  # stale painted materials would shadow the new names
         if m.name.startswith("M_paint_"):
@@ -242,46 +308,51 @@ def do_apply():
     def have(name):
         return all(os.path.exists(os.path.join(painted, f"{name}_{s}.png")) for s in SIDES)
 
-    for kind, keys, frame in (("body", OUTFITS, BODY_FRAME), ("hair", HAIRS, HEAD_FRAME)):
+    for kind, keys, frame in (("body", OUTFITS, BODY_FRAME),):  # hair keeps its flat colour + highlight band
         for k in keys:
             name = f"{kind}_{k}"
             if not have(name):
                 print("SKIP (not painted yet)", name)
                 continue
             img = atlas([os.path.join(painted, f"{name}_{sd}.png") for sd in SIDES],
-                        os.path.join(PAINT, "atlas", f"{name}.png"))
+                        os.path.join(PAINT, "atlas", f"{name}.jpg"))
             mat = paint_material(f"paint_{name}", img)
             for o in objects_for_pass(kind, k):
                 project_uv(o, frame)
                 assign(o, mat)
             print("PAINTED", name)
 
-    # head: neutral + expression textures (front changes, back is shared)
+    # head: flat skin (the toon shader shades it) + a face decal carrying eyes/brows/mouth, ZZZ-style
     head = bpy.data.objects["Head"]
-    shared = [os.path.join(painted, f"head_bare_{sd}.png") for sd in SIDES[1:]]
-    face_imgs = {}
+    skin_mat = bpy.data.materials.get("M_skin")
+    tone = os.path.join(tex_dir, "skin_tone.txt")
+    if skin_mat:  # ZZZ-style skin: one clean light tone, no paper grain; the toon washes do the shading
+        r, g, b = SKIN_TONE
+        lin = [((c / 255 + 0.055) / 1.055) ** 2.4 for c in (r, g, b)]
+        nt = skin_mat.node_tree
+        for n in nt.nodes:
+            if n.type == "MIX" and n.data_type == "RGBA" and n.blend_type == "MULTIPLY" and not n.inputs[7].is_linked:
+                for l in list(n.inputs[6].links):
+                    nt.links.remove(l)
+                n.inputs[6].default_value = (1, 1, 1, 1)
+                n.inputs[7].default_value = (*lin, 1)
+                break
+    decal_imgs = {}
     for e in EXPR:
-        front = os.path.join(painted, f"face_{e}.png")
-        if os.path.exists(front) and all(os.path.exists(p) for p in shared):
-            face_imgs[e] = atlas([front] + shared, os.path.join(tex_dir, f"head_{e}.jpg"))
-            face_imgs[e].use_fake_user = True  # keep unused expressions in the .blend
-    if "neutral" in face_imgs:
-        project_uv(head, HEAD_FRAME, bias={"front": 1.3, "back": 1.1})
-        mat = paint_material("paint_head", face_imgs["neutral"])
-        assign(head, mat)
+        f = os.path.join(tex_dir, f"face_{e}.png")
+        if os.path.exists(f):
+            img = bpy.data.images.load(f, check_existing=False)
+            img.name = f"face_{e}"
+            img.alpha_mode = "STRAIGHT"
+            img.use_fake_user = True
+            decal_imgs[e] = img
+    if "neutral" in decal_imgs:
+        build_face_decal(head, decal_imgs["neutral"])
         bpy.data.objects["Face"].hide_render = bpy.data.objects["Face"].hide_viewport = True
-        head["expression_textures"] = ",".join(face_imgs)
-        # Blender-side expression swap: a driver can't swap images, so a handler does it on frame change
         txt = bpy.data.texts.get("expression_swap.py") or bpy.data.texts.new("expression_swap.py")
         txt.from_string(EXPR_HANDLER)
         txt.use_module = True
-        print("PAINTED head", list(face_imgs))
-        fingers = bpy.data.objects.get("Fingers")
-        if fingers:
-            skin_patch_uv(fingers, HEAD_FRAME)
-            fmat = paint_material("paint_fingers", face_imgs["neutral"])
-            assign(fingers, fmat)
-            bc.add_outline(fingers, 0.002) if not any(m.type == "SOLIDIFY" for m in fingers.modifiers) else None
+        print("PAINTED head", list(decal_imgs))
 
     for o in stage:
         o.hide_viewport = False
@@ -296,12 +367,12 @@ EXPR_HANDLER = '''import bpy
 
 def _swap(scene, *_):
     arm = bpy.data.objects.get("HeroRig")
-    mat = bpy.data.materials.get("M_paint_head")
+    mat = bpy.data.materials.get("M_face_decal")
     if not arm or not mat:
         return
     names = ["neutral", "focused", "gentle_smile", "determined", "surprised", "battle_ready", "tired", "worried", "eyes_closed"]
     e = names[int(arm.get("expression", 0)) % len(names)]
-    img = bpy.data.images.get(f"head_{e}")
+    img = bpy.data.images.get(f"face_{e}")
     node = mat.node_tree.nodes.get("PaintTex")
     if img and node and node.image != img:
         node.image = img
@@ -312,8 +383,8 @@ bpy.app.handlers.depsgraph_update_post.append(_swap)
 
 
 def set_expression_texture(e):
-    img = bpy.data.images.get(f"head_{e}")
-    mat = bpy.data.materials.get("M_paint_head")
+    img = bpy.data.images.get(f"face_{e}")
+    mat = bpy.data.materials.get("M_face_decal")
     if img and mat:
         mat.node_tree.nodes["PaintTex"].image = img
 
@@ -335,7 +406,7 @@ def export():
     bpy.ops.export_scene.gltf(filepath=glb, export_format="GLB", use_selection=True, export_apply=True,
                               export_animations=True, export_animation_mode="ACTIONS", export_morph=True,
                               export_skins=True, export_yup=True,
-                              export_image_format="JPEG", export_jpeg_quality=90)
+                              export_image_format="AUTO", export_jpeg_quality=90)
     print("EXPORTED", glb, os.path.getsize(glb))
 
 

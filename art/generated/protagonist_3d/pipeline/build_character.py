@@ -510,17 +510,17 @@ def skin_hair(obj, arm):
 # Head profile measured from a reference anime-style head (chin -> crown), metres, character faces -Y.
 # t: 0 chin .. 1 crown;  front: face-plane depth (no nose);  back: skull/jaw back;  w: half width
 HEAD_PROFILE = [
-    # t     front    back     w
-    (0.00, -0.088, -0.060, 0.012),
-    (0.05, -0.092, -0.033, 0.026),
-    (0.10, -0.096, -0.004, 0.038),
-    (0.16, -0.099,  0.022, 0.047),
-    (0.22, -0.101,  0.042, 0.055),
-    (0.30, -0.102,  0.060, 0.062),
+    # t     front    back     w        (narrow, pointed anime chin; wide cheekbones and temples)
+    (0.00, -0.090, -0.064, 0.010),
+    (0.05, -0.093, -0.036, 0.022),
+    (0.10, -0.096, -0.006, 0.033),
+    (0.16, -0.099,  0.020, 0.042),
+    (0.22, -0.101,  0.040, 0.048),
+    (0.30, -0.102,  0.060, 0.059),
     (0.38, -0.102,  0.073, 0.067),
-    (0.46, -0.104,  0.082, 0.071),
-    (0.55, -0.106,  0.088, 0.074),
-    (0.64, -0.106,  0.092, 0.075),
+    (0.46, -0.104,  0.082, 0.072),
+    (0.55, -0.106,  0.088, 0.075),
+    (0.64, -0.106,  0.092, 0.076),
     (0.72, -0.105,  0.093, 0.075),
     (0.80, -0.101,  0.090, 0.072),
     (0.87, -0.092,  0.082, 0.066),
@@ -1109,17 +1109,53 @@ def braid(bm, pts, r):
                                       matrix=Matrix.Translation(c) @ Matrix.Diagonal((r, r, r * 1.3, 1)))
 
 
+HAIR_UV_Z = (1.35, 1.82)  # hair texture v runs over this height range
+
+
+def hair_band_material():
+    """Flat warm-brown hair with a soft highlight band near the crown, darker toward the tips."""
+    import numpy as np
+    img = bpy.data.images.get("hair_band") or bpy.data.images.new("hair_band", 8, 256, alpha=False)
+    base = np.array(PALETTE["hair_brown"])
+    v = np.linspace(0, 1, 256)
+    z = HAIR_UV_Z[0] + v * (HAIR_UV_Z[1] - HAIR_UV_Z[0])
+    shade = 0.78 + 0.22 * np.clip((z - 1.45) / 0.25, 0, 1)                    # tips a little darker
+    band = 0.55 * np.exp(-((z - 1.735) / 0.012) ** 2)                          # highlight band
+    col = base[None, :] * shade[:, None] + band[:, None] * (np.array([1.0, 0.86, 0.66]) - base[None, :] * shade[:, None])
+    px = np.ones((256, 8, 4), dtype=np.float32)
+    px[..., :3] = np.clip(col, 0, 1)[:, None, :]
+    img.pixels = px.ravel()
+    img.filepath_raw = os.path.join(ROOT, "exports", "textures", "hair_band.png")
+    os.makedirs(os.path.dirname(img.filepath_raw), exist_ok=True)
+    img.file_format = "PNG"
+    img.save()
+    _materials.pop("M_hair_flat", None)
+    return material("hair_flat", color=(1.0, 1.0, 1.0), image=img)
+
+
+def hair_band_uv(obj):
+    me = obj.data
+    uv = me.uv_layers.get("UVMap") or me.uv_layers.new(name="UVMap")
+    for p in me.polygons:
+        for li in p.loop_indices:
+            z = me.vertices[me.loops[li].vertex_index].co.z
+            uv.data[li].uv = (0.5, (z - HAIR_UV_Z[0]) / (HAIR_UV_Z[1] - HAIR_UV_Z[0]))
+
+
 def build_hair(root_col):
     col = collection("Hair", root_col)
     mat = material("hair_brown")
     styles = {}
     rad = math.radians
 
+    mat = hair_band_material()
+
     def finish(name, bm):
         bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
         obj = mesh_from_bmesh(f"Hair_{name}", bm, col)
         set_material(obj, mat)
         shade_smooth(obj)
+        hair_band_uv(obj)
         styles[name] = obj
 
     def shaggy(bm, seed, sweep=0.0, n=40, front_end=78, length=1.0):
@@ -1693,6 +1729,10 @@ def main():
     head = build_head(body_col)
     set_material(head, material("skin"))
     bind(head, arm, bone="head")
+    for sx, x in (("L", 1), ("R", -1)):
+        ear = ellipsoid(f"Ear.{sx}", body_col, (0.007, 0.014, 0.022), (0.078 * x, 0.008, 1.63), material("skin"),
+                        rot=(0, 0, math.radians(-12 * x)), segs=(10, 8))
+        bind(ear, arm, bone="head")
     face = build_face(body_col, head)
     bind(face, arm, bone="head")
 
@@ -1708,7 +1748,8 @@ def main():
     everything = ([body, head] + list(fingers.values()) + [x for _, items in outfits.values() for x in items] + list(hair_styles.values())
                   + [x for objs in accessories.values() for x in objs] + list(weapons.values()))
     for o in everything:
-        smart_uv(o)
+        if not o.name.startswith("Hair_"):
+            smart_uv(o)
         add_outline(o, 0.005 if o is head else 0.003 if o.name.startswith("Hair_") else 0.006)
 
     acts = build_animations(arm)
