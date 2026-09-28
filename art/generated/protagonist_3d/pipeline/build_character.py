@@ -510,27 +510,27 @@ def skin_hair(obj, arm):
 # Head profile measured from a reference anime-style head (chin -> crown), metres, character faces -Y.
 # t: 0 chin .. 1 crown;  front: face-plane depth (no nose);  back: skull/jaw back;  w: half width
 HEAD_PROFILE = [
+    # measured on the protagonist turnaround (front width, side depth; ear at y ~ +0.005)
     # t     front    back     w
-    (0.00, -0.088, -0.060, 0.012),
-    (0.05, -0.092, -0.033, 0.026),
-    (0.10, -0.096, -0.004, 0.038),
-    (0.16, -0.099,  0.022, 0.047),
-    (0.22, -0.101,  0.042, 0.055),
-    (0.30, -0.102,  0.060, 0.062),
-    (0.38, -0.102,  0.073, 0.067),
-    (0.46, -0.104,  0.082, 0.071),
-    (0.55, -0.106,  0.088, 0.074),
-    (0.64, -0.106,  0.092, 0.075),
-    (0.72, -0.105,  0.093, 0.075),
-    (0.80, -0.101,  0.090, 0.072),
-    (0.87, -0.092,  0.082, 0.066),
-    (0.93, -0.074,  0.066, 0.054),
-    (0.97, -0.050,  0.045, 0.036),
-    (1.00, -0.015,  0.015, 0.010),
+    (0.00, -0.112, -0.050, 0.020),
+    (0.05, -0.120, -0.030, 0.034),
+    (0.10, -0.126, -0.005, 0.044),
+    (0.17, -0.129,  0.018, 0.055),
+    (0.25, -0.130,  0.035, 0.064),
+    (0.35, -0.128,  0.050, 0.072),
+    (0.45, -0.124,  0.062, 0.077),
+    (0.50, -0.122,  0.068, 0.078),
+    (0.60, -0.123,  0.074, 0.078),
+    (0.70, -0.118,  0.077, 0.075),
+    (0.80, -0.108,  0.076, 0.074),
+    (0.87, -0.096,  0.070, 0.070),
+    (0.93, -0.076,  0.057, 0.061),
+    (0.97, -0.050,  0.038, 0.046),
+    (1.00, -0.015,  0.012, 0.010),
 ]
 HEAD_CHIN_Z, HEAD_CROWN_Z = 1.535, 1.765
-HEAD_XY_SCALE = 1.06
-NOSE = (0.30, 0.38, 0.017)   # t range of the nose ridge and its tip height above the face plane
+HEAD_XY_SCALE = 1.0
+NOSE = (0.30, 0.36, 0.008)   # t range of the nose ridge and its tip height above the face plane
 
 
 def build_head(col):
@@ -1746,10 +1746,6 @@ def main():
     head = build_head(body_col)
     set_material(head, material("skin"))
     bind(head, arm, bone="head")
-    for sx, x in (("L", 1), ("R", -1)):
-        ear = ellipsoid(f"Ear.{sx}", body_col, (0.007, 0.014, 0.022), (0.078 * x, 0.008, 1.63), material("skin"),
-                        rot=(0, 0, math.radians(-12 * x)), segs=(10, 8))
-        bind(ear, arm, bone="head")
     face = build_face(body_col, head)
     bind(face, arm, bone="head")
 

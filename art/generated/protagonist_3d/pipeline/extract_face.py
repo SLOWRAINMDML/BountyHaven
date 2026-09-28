@@ -31,7 +31,7 @@ def erode(mask, px):
 
 
 # Feature heights measured on the protagonist illustration, as a fraction of chin -> skull top
-FEATURE_T = {"mouth": 0.19, "nose": 0.29, "eye": 0.47, "brow": 0.565}
+FEATURE_T = {"mouth": 0.20, "nose": 0.32, "eye": 0.50, "brow": 0.59}  # turnaround front view
 CHIN_Z, CROWN_Z = 1.535, 1.765
 FRAME = (1.64, 0.62)  # face paint framing: centre z, ortho size (HEAD_FRAME in paint_project.py)
 
@@ -77,7 +77,7 @@ def remap_features(rgba, alpha_src):
     if not found:
         return rgba
     pts = [(CHIN_Z, CHIN_Z)]
-    for k in ("mouth", "nose", "eye", "brow"):
+    for k in ("eye",):  # chin stays, eyes land on the illustration height; nose and mouth scale with them
         if k in found:
             pts.append((found[k], CHIN_Z + FEATURE_T[k] * (CROWN_Z - CHIN_Z)))
     pts.append((CROWN_Z + 0.02, CROWN_Z + 0.02))
@@ -124,6 +124,10 @@ def main():
         if e == "neutral":
             ref_alpha = alpha
         rgba = remap_features(rgba, ref_alpha).clip(0, 255).astype("uint8")
+        full = np.dstack([np.asarray(Image.open(f).convert("RGB").resize(render.size), dtype=np.float32), np.full(alpha.shape, 255.0)])
+        full = remap_features(full, ref_alpha).clip(0, 255).astype("uint8")
+        (P / "painted_remap").mkdir(exist_ok=True)
+        Image.fromarray(full[..., :3]).save(P / "painted_remap" / f"face_{e}.png")
         Image.fromarray(rgba).save(OUT / f"face_{e}.png")
         print("decal", e, "skin", skin.round(), "coverage %.3f" % (alpha > 0.5).mean())
     (OUT / "skin_tone.txt").write_text(" ".join(str(int(c)) for c in skin))

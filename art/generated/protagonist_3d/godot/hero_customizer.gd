@@ -12,7 +12,7 @@ const ACCESSORIES := ["Scarf", "Cloak", "Satchel", "Goggles", "Gloves"]
 const WEAPONS := ["", "Baton", "Pistol"]
 const LOOPING := ["idle", "walk", "run", "guard"]
 const WATERCOLOR_SHADER := preload("watercolor_character.gdshader")
-## Face decal textures, one per expression (face_<expression>.png).
+## Painted head textures, one per expression (head_<expression>.png).
 const HEAD_TEXTURE_DIR := "../exports/textures"
 
 @export_enum("Pilot", "Vest", "Mechanic", "Guild") var outfit := 0:
@@ -80,25 +80,26 @@ func _apply() -> void:
 			for acc in ACCESSORIES:
 				if n.begins_with("Acc_" + acc.trim_suffix("s")):
 					mi.visible = accessories.get(acc, true)
-		elif n == "FaceDecal":
+		elif n == "Head":
 			_set_expression(mi)
 
 
-func _set_expression(decal: MeshInstance3D) -> void:
-	# ZZZ-style face: eyes/brows/mouth live on a transparent decal over the flat-skin head;
-	# each expression is its own decal texture (face_<expression>.png)
+func _set_expression(head: MeshInstance3D) -> void:
+	# expressions are painted: swap the head texture (front half of the atlas)
 	var dir: String = (get_script() as Script).resource_path.get_base_dir().path_join(HEAD_TEXTURE_DIR)
-	var path := dir.path_join("face_%s.png" % EXPRESSIONS[expression]).simplify_path()
+	var path := dir.path_join("head_%s.jpg" % EXPRESSIONS[expression]).simplify_path()
 	if not ResourceLoader.exists(path):
 		return
 	var tex: Texture2D = load(path)
-	var sm := decal.get_surface_override_material(0) as StandardMaterial3D
-	if sm == null:
-		sm = (decal.mesh.surface_get_material(0) as StandardMaterial3D).duplicate()
-		sm.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-		sm.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-		decal.set_surface_override_material(0, sm)
-	sm.albedo_texture = tex
+	var mat := head.get_surface_override_material(0)
+	if mat is ShaderMaterial:
+		(mat as ShaderMaterial).set_shader_parameter("paper_tex", tex)
+	else:
+		var sm := (head.mesh.surface_get_material(0) as StandardMaterial3D)
+		if sm:
+			sm = sm.duplicate()
+			sm.albedo_texture = tex
+			head.set_surface_override_material(0, sm)
 
 
 func _convert_materials(root: Node) -> void:
@@ -108,8 +109,8 @@ func _convert_materials(root: Node) -> void:
 			continue
 		for s in mesh.get_surface_count():
 			var src := mesh.surface_get_material(s) as StandardMaterial3D
-			if src == null or src.resource_name in ["M_outline", "M_face_decal"]:
-				continue  # keep the inverted-hull outline and the transparent face decal as-is
+			if src == null or src.resource_name == "M_outline":
+				continue  # keep the inverted-hull outline as-is
 			var m := ShaderMaterial.new()
 			m.shader = WATERCOLOR_SHADER
 			m.set_shader_parameter("albedo", src.albedo_color)

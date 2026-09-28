@@ -91,10 +91,9 @@ def jobs():
                                    f"warm highlights. Keep the hair mass exactly inside the render's hair silhouette.\n\n{STYLE}"))
     out.append(dict(name="face_neutral", src="head_bare_front", refs=[EXPR_SHEET, DESIGN],
                     prompt=f"{KEEP}\n\nPaint the face of the BountyHaven protagonist, front view, NEUTRAL expression, matching the "
-                           f"attached expression sheet: large anime-style warm brown eyes with bold dark upper lash lines and small "
-                           f"highlights, set at about the vertical middle of the head, brown brows, a tiny nose line, small closed mouth. "
-                           f"Paint the skin as ONE flat even colour with no shading, no cheek shadow and no jaw or face outline lines "
-                           f"inside the face (shading is added in 3D). The head is intentionally BALD because the hair "
+                           f"attached design sheet and expression sheet: warm brown eyes with dark upper lash lines and small highlights set at "
+                           f"the vertical middle of the head, brown brows, a small nose, closed mouth, warm tanned skin with soft "
+                           f"watercolor shading. The head is intentionally BALD because the hair "
                            f"is a separate 3D part: paint bare skin on the scalp, do NOT add any hair. Keep the scarf and jacket at the "
                            f"bottom as they are.\n\n{STYLE}"))
     for side in ("left", "right"):
