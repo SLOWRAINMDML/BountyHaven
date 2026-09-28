@@ -131,7 +131,7 @@ def skin_patch_uv(obj, frame):
             me.uv_layers.remove(layer)
 
 
-SKIN_TONE = (240, 205, 176)  # sRGB, light warm skin close to the ZZZ references
+SKIN_TONE = (236, 196, 160)  # between the ZZZ references and the illustration's tan  # sRGB, light warm skin close to the ZZZ references
 
 
 def build_face_decal(head, img):

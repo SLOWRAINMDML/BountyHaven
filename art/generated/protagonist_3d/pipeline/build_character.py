@@ -39,7 +39,7 @@ FPS = 30
 # --------------------------------------------------------------------------
 PALETTE = {
     "skin": (0.80, 0.58, 0.44),
-    "hair_brown": (0.30, 0.16, 0.08),
+    "hair_brown": (0.30, 0.19, 0.10),
     "scarf_red": (0.62, 0.20, 0.12),
     "cream": (0.86, 0.80, 0.66),
     "canvas_tan": (0.62, 0.50, 0.36),
@@ -510,17 +510,17 @@ def skin_hair(obj, arm):
 # Head profile measured from a reference anime-style head (chin -> crown), metres, character faces -Y.
 # t: 0 chin .. 1 crown;  front: face-plane depth (no nose);  back: skull/jaw back;  w: half width
 HEAD_PROFILE = [
-    # t     front    back     w        (narrow, pointed anime chin; wide cheekbones and temples)
-    (0.00, -0.090, -0.064, 0.010),
-    (0.05, -0.093, -0.036, 0.022),
-    (0.10, -0.096, -0.006, 0.033),
-    (0.16, -0.099,  0.020, 0.042),
-    (0.22, -0.101,  0.040, 0.048),
-    (0.30, -0.102,  0.060, 0.059),
+    # t     front    back     w
+    (0.00, -0.088, -0.060, 0.012),
+    (0.05, -0.092, -0.033, 0.026),
+    (0.10, -0.096, -0.004, 0.038),
+    (0.16, -0.099,  0.022, 0.047),
+    (0.22, -0.101,  0.042, 0.055),
+    (0.30, -0.102,  0.060, 0.062),
     (0.38, -0.102,  0.073, 0.067),
-    (0.46, -0.104,  0.082, 0.072),
-    (0.55, -0.106,  0.088, 0.075),
-    (0.64, -0.106,  0.092, 0.076),
+    (0.46, -0.104,  0.082, 0.071),
+    (0.55, -0.106,  0.088, 0.074),
+    (0.64, -0.106,  0.092, 0.075),
     (0.72, -0.105,  0.093, 0.075),
     (0.80, -0.101,  0.090, 0.072),
     (0.87, -0.092,  0.082, 0.066),
@@ -1113,14 +1113,14 @@ HAIR_UV_Z = (1.35, 1.82)  # hair texture v runs over this height range
 
 
 def hair_band_material():
-    """Flat warm-brown hair with a soft highlight band near the crown, darker toward the tips."""
+    """Flat warm-brown hair, a little darker toward the tips (no highlight band)."""
     import numpy as np
     img = bpy.data.images.get("hair_band") or bpy.data.images.new("hair_band", 8, 256, alpha=False)
     base = np.array(PALETTE["hair_brown"])
     v = np.linspace(0, 1, 256)
     z = HAIR_UV_Z[0] + v * (HAIR_UV_Z[1] - HAIR_UV_Z[0])
-    shade = 0.78 + 0.22 * np.clip((z - 1.45) / 0.25, 0, 1)                    # tips a little darker
-    band = 0.55 * np.exp(-((z - 1.735) / 0.012) ** 2)                          # highlight band
+    shade = 0.9 + 0.1 * np.clip((z - 1.45) / 0.25, 0, 1)                      # tips a touch darker
+    band = 0.0 * z                                                             # no highlight band
     col = base[None, :] * shade[:, None] + band[:, None] * (np.array([1.0, 0.86, 0.66]) - base[None, :] * shade[:, None])
     px = np.ones((256, 8, 4), dtype=np.float32)
     px[..., :3] = np.clip(col, 0, 1)[:, None, :]
@@ -1159,20 +1159,37 @@ def build_hair(root_col):
         styles[name] = obj
 
     def shaggy(bm, seed, sweep=0.0, n=40, front_end=78, length=1.0):
+        """Tousled like the illustration: parted, uneven fringe with gaps over the eyes,
+        side locks that flick outward at the tips, and loose tufts lifting off the crown."""
         rng = random.Random(seed)
-        hair_cap(bm, rad(front_end - 8), rad(95), rad(115), lift=1.05)
+        hair_cap(bm, rad(front_end - 10), rad(95), rad(115), lift=1.05)
         for i in range(n):
             th = 2 * math.pi * i / n + rng.uniform(-0.1, 0.1)
             front = math.cos(th)
-            end = rad(front_end) if front > 0.6 else rad(98 + 18 * max(-front, 0) * length)
-            clump(bm, flow(th, rad(rng.uniform(0, 25)), end + rad(rng.uniform(-8, 8)),
-                           dtheta=sweep + rng.uniform(-0.3, 0.3), lift0=1.07, lift1=1.15 + rng.uniform(0, 0.05),
-                           curl=rng.uniform(0.005, 0.02)),
-                  width=rng.uniform(0.036, 0.05), thick=0.017)
-        for i in range(14):  # crown tufts for the tousled silhouette
+            if front > 0.6:  # fringe: some locks stop at the brow, others at the hairline
+                end = rad(front_end + rng.choice((-10, -4, 0, 3)))
+                curl = rng.uniform(0.004, 0.012)
+            else:
+                end = rad(98 + 18 * max(-front, 0) * length)
+                curl = rng.uniform(0.008, 0.02) * (1.0 if abs(math.sin(th)) > 0.5 else 0.6)  # sides flick out a little
+            clump(bm, flow(th, rad(rng.uniform(0, 25)), end + rad(rng.uniform(-6, 6)),
+                           dtheta=sweep + rng.uniform(-0.35, 0.35), lift0=1.07, lift1=1.15 + rng.uniform(0, 0.06),
+                           curl=curl),
+                  width=rng.uniform(0.03, 0.046), thick=0.016)
+        for th, end, w in ((-0.42, 86, 0.030), (-0.16, 91, 0.032), (0.08, 83, 0.028), (0.3, 89, 0.030), (0.55, 82, 0.028)):
+            # long pointed fringe locks falling to eye level, as in the illustration (gaps between them)
+            th += sweep * 0.6
+            clump(bm, flow(th, rad(12), rad(end), steps=8, lift0=1.08, lift1=1.17, dtheta=rng.uniform(-0.15, 0.15),
+                           curl=0.006), width=w, thick=0.014, tip_taper=1.0)
+        for sgn in (1, -1):  # side locks sweeping down past the ears and flicking out
+            for k in range(3):
+                th = sgn * (1.05 + 0.25 * k)
+                clump(bm, flow(th, rad(20), rad(112 + 6 * k), steps=8, lift0=1.08, lift1=1.2, curl=0.03),
+                      width=0.032, thick=0.015, tip_taper=1.0)
+        for i in range(16):  # loose locks over the crown, lying along the skull
             th = rng.uniform(0, 2 * math.pi)
-            clump(bm, flow(th, rad(3), rad(rng.uniform(35, 55)), steps=5, lift0=1.07, lift1=1.2, curl=0.02,
-                           dtheta=sweep * 0.5), width=0.03, thick=0.016)
+            clump(bm, flow(th, rad(3), rad(rng.uniform(45, 75)), steps=6, lift0=1.09, lift1=1.15, curl=0.012,
+                           dtheta=sweep * 0.5 + rng.uniform(-0.3, 0.3)), width=0.026, thick=0.014)
 
     # 01 tousled (base design)
     bm = bmesh.new(); shaggy(bm, 3)

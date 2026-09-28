@@ -2,19 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dnngfl6i50bjv"
-path="res://.godot/imported/bountyhaven_hero_body_vest.jpg-41d6c627bb6ee164cdd7743264f87910.ctex"
+uid="uid://bb2ohobavavjw"
+path="res://.godot/imported/sheet_face_vs_illustration.png-07f2e2be64d254d9259afed8b0ee7ab2.ctex"
 metadata={
 "vram_texture": false
-}
-generator_parameters={
-"md5": "ed701f01f6336e343b6dfac1540cc146"
 }
 
 [deps]
 
-source_file="res://art/generated/protagonist_3d/exports/bountyhaven_hero_body_vest.jpg"
-dest_files=["res://.godot/imported/bountyhaven_hero_body_vest.jpg-41d6c627bb6ee164cdd7743264f87910.ctex"]
+source_file="res://art/generated/protagonist_3d/previews/sheet_face_vs_illustration.png"
+dest_files=["res://.godot/imported/sheet_face_vs_illustration.png-07f2e2be64d254d9259afed8b0ee7ab2.ctex"]
 
 [params]
 
@@ -26,7 +23,7 @@ compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
 compress/normal_map=0
 compress/channel_pack=0
-mipmaps/generate=true
+mipmaps/generate=false
 mipmaps/limit=-1
 roughness/mode=0
 roughness/src_normal=""
