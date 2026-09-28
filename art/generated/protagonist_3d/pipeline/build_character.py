@@ -277,9 +277,9 @@ BONES = [
     ("root", (0, 0, 0), (0, 0.25, 0), None, (0, 0, 1)),
     ("hips", (0, 0, 0.93), (0, 0, 1.05), "root", FRONT),
     ("spine", (0, 0, 1.05), (0, 0, 1.22), "hips", FRONT),
-    ("chest", (0, 0, 1.22), (0, 0, 1.44), "spine", FRONT),
-    ("neck", (0, 0, 1.44), (0, -0.01, 1.53), "chest", FRONT),
-    ("head", (0, -0.01, 1.53), (0, -0.01, 1.78), "neck", FRONT),
+    ("chest", (0, 0, 1.22), (0, 0, 1.495), "spine", FRONT),
+    ("neck", (0, 0, 1.495), (0, -0.01, 1.545), "chest", FRONT),
+    ("head", (0, -0.01, 1.545), (0, -0.01, 1.80), "neck", FRONT),
 ]
 for s, x in (("L", 1), ("R", -1)):
     BONES += [
@@ -322,7 +322,7 @@ HAIR_CHAINS = {"front.C": 0.0, "front.L": 0.55, "front.R": -0.55, "side.L": 1.45
 
 
 def _hair_chain_points(theta):
-    c, r = Vector((0, -0.006, 1.643)), Vector((0.094, 0.112, 0.112))
+    c, r = Vector((0, -0.006, 1.652)), Vector((0.1, 0.119, 0.121))
     def on(phi, lift):
         d = Vector((math.sin(phi) * math.sin(theta), -math.sin(phi) * math.cos(theta), math.cos(phi)))
         return c + Vector((d.x * r.x, d.y * r.y, d.z * r.z)) * lift
@@ -372,9 +372,9 @@ def build_body(col):
         "pelvis": ((0, 0.0, 0.95), (0.135, 0.095)),
         "waist": ((0, 0.0, 1.07), (0.12, 0.085)),
         "chest": ((0, 0.0, 1.27), (0.175, 0.11)),
-        "upper_chest": ((0, 0.0, 1.38), (0.195, 0.105)),
-        "neck": ((0, -0.005, 1.47), (0.05, 0.05)),
-        "neck_top": ((0, 0.004, 1.585), (0.045, 0.047)),
+        "upper_chest": ((0, 0.0, 1.39), (0.195, 0.105)),
+        "neck": ((0, 0.0, 1.49), (0.068, 0.058)),
+        "neck_top": ((0, 0.004, 1.585), (0.044, 0.046)),
     }
     E = [("pelvis", "waist"), ("waist", "chest"), ("chest", "upper_chest"),
          ("upper_chest", "neck"), ("neck", "neck_top")]
@@ -386,8 +386,8 @@ def build_body(col):
             f"hand{s}": ((0.541 * x, -0.004, 1.062), (0.046, 0.028)),
             f"hip{s}": ((0.092 * x, 0.0, 0.90), (0.088, 0.088)),
             f"knee{s}": ((0.10 * x, 0.005, 0.53), (0.058, 0.06)),
-            f"ankle{s}": ((0.10 * x, 0.02, 0.09), (0.047, 0.05)),
-            f"toe{s}": ((0.10 * x, -0.155, 0.04), (0.058, 0.042)),
+            f"ankle{s}": ((0.10 * x, 0.02, 0.09), (0.041, 0.044)),
+            f"toe{s}": ((0.10 * x, -0.15, 0.038), (0.05, 0.036)),
         })
         E += [("upper_chest", f"shoulder{s}"), (f"shoulder{s}", f"elbow{s}"), (f"elbow{s}", f"wrist{s}"),
               (f"wrist{s}", f"hand{s}"), ("pelvis", f"hip{s}"), (f"hip{s}", f"knee{s}"),
@@ -528,7 +528,8 @@ HEAD_PROFILE = [
     (0.97, -0.050,  0.045, 0.036),
     (1.00, -0.015,  0.015, 0.010),
 ]
-HEAD_CHIN_Z, HEAD_CROWN_Z = 1.535, 1.745
+HEAD_CHIN_Z, HEAD_CROWN_Z = 1.535, 1.765
+HEAD_XY_SCALE = 1.06
 NOSE = (0.30, 0.38, 0.017)   # t range of the nose ridge and its tip height above the face plane
 
 
@@ -547,7 +548,7 @@ def build_head(col):
     rings = []
     for i in range(rows + 1):
         t = i / rows
-        front, back, w = lerp_profile(t)
+        front, back, w = (v * HEAD_XY_SCALE for v in lerp_profile(t))
         z = HEAD_CHIN_Z + (HEAD_CROWN_Z - HEAD_CHIN_Z) * t
         yc = (front + back) / 2
         ring = []
@@ -824,7 +825,7 @@ def ellipsoid(name, col, radius, loc, mat=None, rot=(0, 0, 0), zcut=None, segs=(
     return obj
 
 
-def upper(zmin, sleeve, zmax=1.485):
+def upper(zmin, sleeve, zmax=1.505):
     """Torso from zmin up to the collar, plus each arm out to `sleeve` along the arm."""
     def keep(co):
         s = along_arm(co)
@@ -851,7 +852,7 @@ def piece(body, name, col, offset, region, mat):
 
 def boots(body, col, prefix, top_z, mat, offset=0.014):
     return [piece(body, f"{prefix}_Boots", col, offset, lower(top_z), mat),
-            piece(body, f"{prefix}_BootCuffs", col, offset + 0.012, lower(top_z, top_z - 0.05), mat)]
+            piece(body, f"{prefix}_BootCuffs", col, offset + 0.008, lower(top_z, top_z - 0.05), mat)]
 
 
 def belt(body, col, prefix, mat, z=(0.96, 1.02), offset=0.022):
@@ -899,17 +900,17 @@ def build_outfits(body, arm, root_col):
 
     def baggy(co):
         """Loose cargo cut: extra cloth over the thigh and bunched above the boot."""
-        return 0.015 + 0.024 * math.exp(-((co.z - 0.66) / 0.16) ** 2) + 0.016 * math.exp(-((co.z - 0.42) / 0.05) ** 2)
+        return 0.015 + 0.024 * math.exp(-((co.z - 0.66) / 0.16) ** 2) + 0.006 * math.exp(-((co.z - 0.42) / 0.05) ** 2)
 
     def legs(col, prefix, trouser="trouser_grey", boot_top=0.36, knee_pads=True, cargo=True):
-        items = [piece(body, f"{prefix}_Trousers", col, baggy, lower(1.0), material(trouser)),
+        items = [piece(body, f"{prefix}_Trousers", col, baggy, lower(1.0, boot_top - 0.03), material(trouser)),  # tucked into the boots
                  belt(body, col, prefix, leather, z=(0.96, 1.03), offset=0.03)]
-        items += boots(body, col, prefix, boot_top, material("leather"), offset=0.028)
+        items += boots(body, col, prefix, boot_top, material("leather"), offset=0.016)
         for sx, x in (("L", 1), ("R", -1)):
             # chunky soles and toe caps, like the design sheet's work boots
-            items.append(bind(box(f"{prefix}_BootSole.{sx}", col, (0.13, 0.27, 0.035), (0.10 * x, -0.05, 0.017), dark, bevel=0.01), arm, bone=f"foot.{sx}"))
-            items.append(bind(ellipsoid(f"{prefix}_BootToe.{sx}", col, (0.066, 0.075, 0.05), (0.10 * x, -0.14, 0.05), material("leather"), segs=(12, 8)), arm, bone=f"toe.{sx}"))
-            bs = ring(f"{prefix}_BootStrap.{sx}", col, 0.0, 0.078, 0.08, 0, 0.018, dark)
+            items.append(bind(box(f"{prefix}_BootSole.{sx}", col, (0.105, 0.245, 0.028), (0.10 * x, -0.05, 0.014), dark, bevel=0.008), arm, bone=f"foot.{sx}"))
+            items.append(bind(ellipsoid(f"{prefix}_BootToe.{sx}", col, (0.054, 0.066, 0.04), (0.10 * x, -0.14, 0.043), material("leather"), segs=(12, 8)), arm, bone=f"toe.{sx}"))
+            bs = ring(f"{prefix}_BootStrap.{sx}", col, 0.0, 0.064, 0.066, 0, 0.016, dark)
             bs.location = (0.10 * x, 0.02, 0.24)
             items.append(bind(bs, arm, bone=f"shin.{sx}"))
             if knee_pads:
@@ -1016,10 +1017,10 @@ def build_accessories(body, arm, root_col):
     for sx, x in (("L", 1), ("R", -1)):
         g = cone_mesh(f"Acc_Goggles.{sx}", col, [(0, 0.024, 0.024, 0, 0), (0.02, 0.022, 0.022, 0, 0)], 12, material("brass", metallic=0.6, roughness=0.5), close_top=True)
         g.rotation_euler = (math.radians(-70), 0, 0)
-        g.location = (0.032 * x, -0.092, 1.716)
+        g.location = (0.034 * x, -0.098, 1.735)
         gog.append(g)
-    band = ring("Acc_GogglesBand", col, 0.0, 0.098, 0.108, 0.0, 0.013, material("leather_dark"), segs=24)
-    band.location = (0, -0.012, 1.705)
+    band = ring("Acc_GogglesBand", col, 0.0, 0.104, 0.115, 0.0, 0.013, material("leather_dark"), segs=24)
+    band.location = (0, -0.008, 1.722)
     band.rotation_euler = (math.radians(-14), 0, 0)
     acc["goggles"] = [bind(o, arm, bone="head") for o in gog + [band]]
     # reinforced leather gloves
@@ -1034,8 +1035,8 @@ def build_accessories(body, arm, root_col):
 # --------------------------------------------------------------------------
 # Hair (rigid on the head bone): tapered, flattened clumps that follow the skull
 # --------------------------------------------------------------------------
-HEAD_C = Vector((0, -0.006, 1.643))
-HEAD_R = Vector((0.094, 0.112, 0.112))   # hair frame around the skull (skull itself: 0.084 x 0.097 x 0.103)
+HEAD_C = Vector((0, -0.006, 1.652))
+HEAD_R = Vector((0.1, 0.119, 0.121))   # hair frame around the skull (skull itself: 0.084 x 0.097 x 0.103)
 
 
 def skull(theta, phi, lift=1.0):
