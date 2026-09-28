@@ -1109,7 +1109,7 @@ def build_hair(root_col):
             continue  # keep the face open
         clump(bm, flow(th, rad(4), rad(100), lift1=1.1, hang=0.17 if front < 0.3 else 0.12), width=0.032, thick=0.012)
     for sgn in (1, -1):
-        clump(bm, flow(0.55 * sgn, rad(2), rad(95), lift1=1.1, hang=0.12), width=0.03, thick=0.012)
+        clump(bm, flow(0.95 * sgn, rad(2), rad(95), lift1=1.12, hang=0.12), width=0.03, thick=0.012)  # frames the face, clear of the cheeks
     finish("messy_long", bm)
 
     # 09 travel braid: tousled top, braid down the back

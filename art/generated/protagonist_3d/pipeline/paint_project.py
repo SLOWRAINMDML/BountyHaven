@@ -78,7 +78,7 @@ def occluded(origin, direction, own):
     return bool(hit) and (loc - origin).length > 0.01
 
 
-def project_uv(obj, frame):
+def project_uv(obj, frame, bias=None):
     """UV 'Paint': each face samples the view that sees it most squarely (4-quadrant atlas)."""
     me = obj.data
     uv = me.uv_layers.get("Paint") or me.uv_layers.new(name="Paint")
@@ -87,6 +87,8 @@ def project_uv(obj, frame):
     for p in me.polygons:
         n = (nm @ p.normal).normalized()
         score = {"front": -n.y, "back": n.y, "left": n.x, "right": -n.x}
+        for k, b in (bias or {}).items():
+            score[k] = score[k] * b if score[k] > 0 else score[k]
         centre = mw @ p.center
         side = max(score, key=score.get)
         for cand in sorted(score, key=score.get, reverse=True):
@@ -104,6 +106,26 @@ def project_uv(obj, frame):
     me.uv_layers.active = uv
     uv.active_render = True
     # drop the old box-projection UVs so glTF carries a single TEXCOORD_0
+    for layer in list(me.uv_layers):
+        if layer.name != "Paint":
+            me.uv_layers.remove(layer)
+
+
+def skin_patch_uv(obj, frame):
+    """Map every vertex into a small forehead window of the front quadrant: painted skin with
+    the same pigment grain as the face, and the knuckle shading from the toon washes."""
+    me = obj.data
+    uv = me.uv_layers.get("Paint") or me.uv_layers.new(name="Paint")
+    cx, cz, s = frame
+    u0, v0 = image_uv(Vector((0.0, 0, 1.672)), frame, "front")  # mid forehead, under the fringe
+    for p in me.polygons:
+        for li in p.loop_indices:
+            co = me.vertices[me.loops[li].vertex_index].co
+            du = (co.y * 0.6 + co.x * 0.2) % 0.02 - 0.01
+            dv = (co.z * 0.6) % 0.02 - 0.01
+            uv.data[li].uv = (0.5 * (u0 + du), 0.5 + 0.5 * (v0 + dv))
+    me.uv_layers.active = uv
+    uv.active_render = True
     for layer in list(me.uv_layers):
         if layer.name != "Paint":
             me.uv_layers.remove(layer)
@@ -244,7 +266,7 @@ def do_apply():
             face_imgs[e] = atlas([front] + shared, os.path.join(tex_dir, f"head_{e}.jpg"))
             face_imgs[e].use_fake_user = True  # keep unused expressions in the .blend
     if "neutral" in face_imgs:
-        project_uv(head, HEAD_FRAME)
+        project_uv(head, HEAD_FRAME, bias={"front": 1.3, "back": 1.1})
         mat = paint_material("paint_head", face_imgs["neutral"])
         assign(head, mat)
         bpy.data.objects["Face"].hide_render = bpy.data.objects["Face"].hide_viewport = True
@@ -254,6 +276,12 @@ def do_apply():
         txt.from_string(EXPR_HANDLER)
         txt.use_module = True
         print("PAINTED head", list(face_imgs))
+        fingers = bpy.data.objects.get("Fingers")
+        if fingers:
+            skin_patch_uv(fingers, HEAD_FRAME)
+            fmat = paint_material("paint_fingers", face_imgs["neutral"])
+            assign(fingers, fmat)
+            bc.add_outline(fingers, 0.002) if not any(m.type == "SOLIDIFY" for m in fingers.modifiers) else None
 
     for o in stage:
         o.hide_viewport = False

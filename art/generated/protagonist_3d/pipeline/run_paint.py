@@ -97,10 +97,10 @@ def jobs():
                            f"bottom as they are.\n\n{STYLE}"))
     for side in ("left", "right"):
         out.append(dict(name=f"head_bare_{side}", src=f"head_bare_{side}", refs=[DESIGN],
-                        prompt=f"{KEEP}\n\nPaint the protagonist's BALD head, {VIEW_DESC[side]}: warm skin with an ear, "
-                               f"the side of the face (brown eye and brow in profile, nose and mouth line) matching the design sheet, "
-                               f"soft watercolor shading. Hair is a separate 3D part, do NOT add hair. Keep the scarf and collar at "
-                               f"the bottom.\n\n{STYLE}"))
+                        prompt=f"{KEEP}\n\nPaint the protagonist's BALD head, {VIEW_DESC[side]}, as plain warm skin with one ear and soft "
+                               f"watercolor shading only. Do NOT paint any eye, eyebrow, nose, mouth or other facial feature (the face "
+                               f"is textured from the front view); the front edge of the silhouette is just smooth skin. Hair is a separate "
+                               f"3D part, do NOT add hair. Keep the scarf and collar at the bottom.\n\n{STYLE}"))
     out.append(dict(name="head_bare_back", src="head_bare_back", refs=[DESIGN],
                     prompt=f"{KEEP}\n\nPaint the back of the protagonist's BALD head and neck as bare warm skin with soft watercolor "
                            f"shading (hair is a separate 3D part, do NOT add hair), the scarf and jacket collar at the bottom.\n\n{STYLE}"))
