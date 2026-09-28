@@ -283,10 +283,10 @@ BONES = [
 ]
 for s, x in (("L", 1), ("R", -1)):
     BONES += [
-        (f"shoulder.{s}", (0.03 * x, 0, 1.42), (0.17 * x, 0.01, 1.43), "chest", FRONT),
-        (f"upper_arm.{s}", (0.17 * x, 0.01, 1.43), (0.37 * x, 0.02, 1.235), f"shoulder.{s}", FRONT),
-        (f"forearm.{s}", (0.37 * x, 0.02, 1.235), (0.545 * x, 0.0, 1.06), f"upper_arm.{s}", FRONT),
-        (f"hand.{s}", (0.545 * x, 0.0, 1.06), (0.605 * x, -0.005, 0.995), f"forearm.{s}", FRONT),
+        (f"shoulder.{s}", (0.03 * x, 0, 1.43), (0.155 * x, 0.01, 1.445), "chest", FRONT),
+        (f"upper_arm.{s}", (0.155 * x, 0.01, 1.445), (0.339 * x, 0.015, 1.264), f"shoulder.{s}", FRONT),
+        (f"forearm.{s}", (0.339 * x, 0.015, 1.264), (0.501 * x, 0.0, 1.105), f"upper_arm.{s}", FRONT),
+        (f"hand.{s}", (0.501 * x, 0.0, 1.105), (0.561 * x, -0.005, 1.04), f"forearm.{s}", FRONT),
         (f"thigh.{s}", (0.095 * x, 0, 0.93), (0.10 * x, 0.005, 0.53), "hips", BACK),
         (f"shin.{s}", (0.10 * x, 0.005, 0.53), (0.10 * x, 0.02, 0.085), f"thigh.{s}", BACK),
         (f"foot.{s}", (0.10 * x, 0.02, 0.085), (0.10 * x, -0.10, 0.025), f"shin.{s}", (0, 0, 1)),
@@ -301,7 +301,7 @@ FINGERS = {  # name: (spread along Y, knuckle set-back along the hand, length sc
 PHALANX = (0.032, 0.023, 0.018)
 for s, x in (("L", 1), ("R", -1)):
     d = Vector((HAND_DIR.x * x, HAND_DIR.y, HAND_DIR.z))
-    knuckle = Vector((0.605 * x, -0.005, 0.995))
+    knuckle = Vector((0.561 * x, -0.005, 1.04))
     for f, (dy, back, k) in FINGERS.items():
         a = knuckle + Vector((0, dy, 0)) - d * back
         parent = f"hand.{s}"
@@ -309,7 +309,7 @@ for s, x in (("L", 1), ("R", -1)):
             b = a + d * seg * k
             BONES.append((f"{f}_0{i}.{s}", tuple(a), tuple(b), parent, (0, 0, 1)))
             parent, a = f"{f}_0{i}.{s}", b
-    t = Vector((0.555 * x, -0.022, 1.045))
+    t = Vector((0.511 * x, -0.022, 1.09))
     td = (d + Vector((0, -0.9, 0))).normalized()
     parent = f"hand.{s}"
     for i, seg in enumerate((0.024, 0.022, 0.018), 1):
@@ -322,7 +322,7 @@ HAIR_CHAINS = {"front.C": 0.0, "front.L": 0.55, "front.R": -0.55, "side.L": 1.45
 
 
 def _hair_chain_points(theta):
-    c, r = Vector((0, -0.012, 1.6426)), Vector((0.101, 0.11, 0.115))
+    c, r = Vector((0, -0.012, 1.643)), Vector((0.094, 0.104, 0.108))
     def on(phi, lift):
         d = Vector((math.sin(phi) * math.sin(theta), -math.sin(phi) * math.cos(theta), math.cos(phi)))
         return c + Vector((d.x * r.x, d.y * r.y, d.z * r.z)) * lift
@@ -373,20 +373,20 @@ def build_body(col):
         "waist": ((0, 0.0, 1.07), (0.12, 0.085)),
         "chest": ((0, 0.0, 1.27), (0.175, 0.11)),
         "upper_chest": ((0, 0.0, 1.38), (0.195, 0.105)),
-        "neck": ((0, -0.005, 1.47), (0.07, 0.066)),
-        "neck_top": ((0, -0.008, 1.545), (0.06, 0.058)),
+        "neck": ((0, -0.005, 1.47), (0.05, 0.05)),
+        "neck_top": ((0, -0.008, 1.545), (0.045, 0.047)),
     }
     E = [("pelvis", "waist"), ("waist", "chest"), ("chest", "upper_chest"),
          ("upper_chest", "neck"), ("neck", "neck_top")]
     for s, x in (("L", 1), ("R", -1)):
         J.update({
-            f"shoulder{s}": ((0.17 * x, 0.01, 1.42), (0.072, 0.068)),
-            f"elbow{s}": ((0.37 * x, 0.02, 1.235), (0.056, 0.054)),
-            f"wrist{s}": ((0.545 * x, 0.0, 1.06), (0.043, 0.038)),
-            f"hand{s}": ((0.585 * x, -0.004, 1.017), (0.05, 0.03)),
-            f"hip{s}": ((0.097 * x, 0.0, 0.90), (0.095, 0.094)),
-            f"knee{s}": ((0.10 * x, 0.005, 0.53), (0.068, 0.07)),
-            f"ankle{s}": ((0.10 * x, 0.02, 0.09), (0.054, 0.056)),
+            f"shoulder{s}": ((0.155 * x, 0.01, 1.435), (0.068, 0.064)),
+            f"elbow{s}": ((0.339 * x, 0.015, 1.264), (0.05, 0.048)),
+            f"wrist{s}": ((0.501 * x, 0.0, 1.105), (0.038, 0.034)),
+            f"hand{s}": ((0.541 * x, -0.004, 1.062), (0.046, 0.028)),
+            f"hip{s}": ((0.092 * x, 0.0, 0.90), (0.088, 0.088)),
+            f"knee{s}": ((0.10 * x, 0.005, 0.53), (0.058, 0.06)),
+            f"ankle{s}": ((0.10 * x, 0.02, 0.09), (0.047, 0.05)),
             f"toe{s}": ((0.10 * x, -0.155, 0.04), (0.058, 0.042)),
         })
         E += [("upper_chest", f"shoulder{s}"), (f"shoulder{s}", f"elbow{s}"), (f"elbow{s}", f"wrist{s}"),
@@ -514,10 +514,10 @@ def build_head(col):
         x, y, z = v.co
         # egg shaped skull, narrower jaw, slightly flat face
         jaw = 1.0 - 0.22 * max(0.0, -z) ** 1.8
-        v.co = Vector((x * 0.099 * jaw, y * 0.108 * (0.93 if y < 0 else 1.0), z * 0.1134))
+        v.co = Vector((x * 0.084 * jaw, y * 0.097 * (0.93 if y < 0 else 1.0), z * 0.103))
         if y < -0.5 and -0.2 < z < 0.2 and abs(x) < 0.25:  # tiny nose bridge
             v.co.y -= 0.01 * (1 - abs(x) / 0.25)
-    bmesh.ops.translate(bm, verts=bm.verts, vec=Vector((0, -0.012, 1.6426)))
+    bmesh.ops.translate(bm, verts=bm.verts, vec=Vector((0, -0.012, 1.643)))
     head = mesh_from_bmesh("Head", bm, col)
     shade_smooth(head)
     return head
@@ -554,17 +554,17 @@ def build_face(col, head=None):
                 f.material_index = mat_of[name.rstrip("LR")]
 
     for s, x in (("L", 1), ("R", -1)):
-        m = Matrix.Translation(surf(0.037 * x, 1.657, 0.001)) @ Matrix.Diagonal((0.011, 0.006, 0.012, 1))
+        m = Matrix.Translation(surf(0.0315 * x, 1.656, 0.001)) @ Matrix.Diagonal((0.0095, 0.006, 0.011, 1))
         add(f"eye{s}", bmesh.ops.create_uvsphere, u_segments=10, v_segments=6, radius=1.0, matrix=m)
-        m = (Matrix.Translation(surf(0.039 * x, 1.669, 0.003)) @ Matrix.Rotation(math.radians(6 * x), 4, "Y")
+        m = (Matrix.Translation(surf(0.033 * x, 1.667, 0.003)) @ Matrix.Rotation(math.radians(6 * x), 4, "Y")
              @ Matrix.Diagonal((0.021, 0.005, 0.0028, 1)))
         add(f"lash{s}", bmesh.ops.create_cube, size=2.0, matrix=m)
-        m = (Matrix.Translation(surf(0.0405 * x, 1.688, 0.004)) @ Matrix.Rotation(math.radians(-8 * x), 4, "Y")
+        m = (Matrix.Translation(surf(0.0345 * x, 1.684, 0.004)) @ Matrix.Rotation(math.radians(-8 * x), 4, "Y")
              @ Matrix.Diagonal((0.024, 0.006, 0.0055, 1)))
         add(f"brow{s}", bmesh.ops.create_cube, size=2.0, matrix=m)
-    m = Matrix.Translation(surf(0, 1.628, 0.003)) @ Matrix.Diagonal((0.006, 0.008, 0.012, 1))
+    m = Matrix.Translation(surf(0, 1.63, 0.003)) @ Matrix.Diagonal((0.006, 0.008, 0.012, 1))
     add("nose", bmesh.ops.create_cone, cap_ends=True, segments=4, radius1=1.0, radius2=0.2, depth=1.6, matrix=m @ Matrix.Rotation(math.radians(90), 4, "X"))
-    m = Matrix.Translation(surf(0, 1.595, 0.0)) @ Matrix.Diagonal((0.026, 0.006, 0.0035, 1))
+    m = Matrix.Translation(surf(0, 1.6, 0.0)) @ Matrix.Diagonal((0.022, 0.006, 0.0035, 1))
     add("mouth", bmesh.ops.create_uvsphere, u_segments=12, v_segments=6, radius=1.0, matrix=m)
     face = mesh_from_bmesh("Face", bm, col)
     for mt in (material("eye", textured=False, ink=True), material("brow", textured=False, ink=True),
@@ -632,7 +632,8 @@ def dominant_groups(obj):
 
 
 ARM_DIR = Vector((0.712, -0.019, -0.702))
-SHOULDER = Vector((0.17, 0.01, 1.43))
+SHOULDER = Vector((0.155, 0.01, 1.445))
+ARM_SCALE = 0.922  # arm is 7.8% shorter than when the sleeve lengths were authored
 
 
 def along_arm(co):
@@ -640,13 +641,13 @@ def along_arm(co):
     if abs(co.x) < 0.14 or co.z < 0.9:
         return -1.0
     d = Vector((abs(co.x), co.y, co.z)) - SHOULDER
-    return d.dot(ARM_DIR)
+    return d.dot(ARM_DIR) / ARM_SCALE
 
 
 def arm_cuts(s):
     cuts = []
     for x in (1, -1):
-        p = SHOULDER + ARM_DIR * s
+        p = SHOULDER + ARM_DIR * s * ARM_SCALE
         cuts.append((Vector((p.x * x, p.y, p.z)), Vector((ARM_DIR.x * x, ARM_DIR.y, ARM_DIR.z))))
     return cuts
 
@@ -853,8 +854,8 @@ def build_outfits(body, arm, root_col):
             if knee_pads:
                 items.append(ellipsoid(f"{prefix}_KneePad.{sx}", col, (0.064, 0.035, 0.072), (0.10 * x, -0.075, 0.53), dark, segs=(12, 8)))
             if cargo:  # thigh cargo pocket with flap on the outer thigh
-                items.append(bind(box(f"{prefix}_ThighPocket.{sx}", col, (0.05, 0.12, 0.13), (0.225 * x, -0.01, 0.68), material(trouser), bevel=0.012), arm, bone=f"thigh.{sx}"))
-                items.append(bind(box(f"{prefix}_ThighFlap.{sx}", col, (0.055, 0.125, 0.04), (0.23 * x, -0.01, 0.74), dark, bevel=0.008), arm, bone=f"thigh.{sx}"))
+                items.append(bind(box(f"{prefix}_ThighPocket.{sx}", col, (0.045, 0.12, 0.13), (0.205 * x, -0.01, 0.68), material(trouser), bevel=0.012), arm, bone=f"thigh.{sx}"))
+                items.append(bind(box(f"{prefix}_ThighFlap.{sx}", col, (0.05, 0.125, 0.04), (0.21 * x, -0.01, 0.74), dark, bevel=0.008), arm, bone=f"thigh.{sx}"))
         for sx, x in (("L", 1), ("R", -1)):  # belt pouches
             items.append(bind(box(f"{prefix}_BeltPouch.{sx}", col, (0.08, 0.05, 0.09), (0.13 * x, -0.125, 0.94), leather, bevel=0.012), arm, bone="hips"))
         return items
@@ -925,11 +926,11 @@ def build_accessories(body, arm, root_col):
     leather = material("leather")
     acc = {}
     # signature rust-red scarf wrapped high around the neck, with a hanging tail
-    scarf = ring("Acc_Scarf", col, 1.48, 0.095, 0.09, -0.005, 0.075, red, flare=0.35)
+    scarf = ring("Acc_Scarf", col, 1.48, 0.075, 0.072, -0.005, 0.075, red, flare=0.35)
     tail = cone_mesh("Acc_ScarfTail", col, [(1.44, 0.035, 0.012, 0.05, -0.1), (1.30, 0.04, 0.012, 0.07, -0.13), (1.18, 0.03, 0.01, 0.08, -0.135)], 8, red)
     ragged(tail, 0.03, 3)
-    cowl = cone_mesh("Acc_ScarfCowl", col, [(1.52, 0.09, 0.085, 0, -0.005), (1.48, 0.17, 0.13, 0, 0.0),
-                                            (1.42, 0.27, 0.165, 0, 0.01), (1.35, 0.30, 0.18, 0, 0.015)], 24, red)
+    cowl = cone_mesh("Acc_ScarfCowl", col, [(1.52, 0.075, 0.075, 0, -0.005), (1.48, 0.14, 0.115, 0, 0.0),
+                                            (1.42, 0.21, 0.145, 0, 0.01), (1.36, 0.235, 0.16, 0, 0.015)], 24, red)
     ragged(cowl, 0.03, 5)
     acc["scarf"] = [bind(scarf, arm, bone="neck"), bind(tail, arm, bone="chest"), bind(cowl, arm, body=body)]
     # short ragged cloak over the back and left shoulder (compass mark lives in the texture work later)
@@ -954,9 +955,9 @@ def build_accessories(body, arm, root_col):
     for sx, x in (("L", 1), ("R", -1)):
         g = cone_mesh(f"Acc_Goggles.{sx}", col, [(0, 0.024, 0.024, 0, 0), (0.02, 0.022, 0.022, 0, 0)], 12, material("brass", metallic=0.6, roughness=0.5), close_top=True)
         g.rotation_euler = (math.radians(-70), 0, 0)
-        g.location = (0.036 * x, -0.098, 1.718)
+        g.location = (0.032 * x, -0.092, 1.716)
         gog.append(g)
-    band = ring("Acc_GogglesBand", col, 0.0, 0.11, 0.121, 0.0, 0.013, material("leather_dark"), segs=24)
+    band = ring("Acc_GogglesBand", col, 0.0, 0.098, 0.108, 0.0, 0.013, material("leather_dark"), segs=24)
     band.location = (0, -0.012, 1.705)
     band.rotation_euler = (math.radians(-14), 0, 0)
     acc["goggles"] = [bind(o, arm, bone="head") for o in gog + [band]]
@@ -972,8 +973,8 @@ def build_accessories(body, arm, root_col):
 # --------------------------------------------------------------------------
 # Hair (rigid on the head bone): tapered, flattened clumps that follow the skull
 # --------------------------------------------------------------------------
-HEAD_C = Vector((0, -0.012, 1.6426))
-HEAD_R = Vector((0.101, 0.11, 0.115))   # skull ellipsoid radii (matches build_head)
+HEAD_C = Vector((0, -0.012, 1.643))
+HEAD_R = Vector((0.094, 0.104, 0.108))   # hair frame around the skull (skull itself: 0.084 x 0.097 x 0.103)
 
 
 def skull(theta, phi, lift=1.0):
@@ -1131,7 +1132,7 @@ def build_weapons(col, arm):
     steel = material("steel", metallic=0.6, roughness=0.55)
     brass = material("brass", metallic=0.6, roughness=0.5)
     grip = material("leather_dark")
-    hand = Vector((-0.585, -0.03, 1.015))
+    hand = Vector((-0.541, -0.03, 1.06))
 
     bm = bmesh.new()
     bmesh.ops.create_cone(bm, cap_ends=True, segments=10, radius1=0.018, radius2=0.018, depth=0.14, matrix=Matrix.Translation((0, 0, 0)))
