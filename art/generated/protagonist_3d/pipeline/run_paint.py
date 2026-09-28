@@ -112,6 +112,10 @@ def jobs():
     return out
 
 
+def is_head(job):
+    return job["name"].startswith(("face_", "head_bare", "hair_"))
+
+
 def run_one(job):
     render = PAINT / "renders" / f"{job['src']}.png"
     jd = PAINT / "jobs" / f"{job['name']}-{uuid.uuid4().hex[:8]}"
@@ -146,7 +150,7 @@ def run_one(job):
         paths.append(Path(data["path"]).resolve())
     if rc != 0 or not data.get("ok") or out.resolve() not in paths or not out.is_file() or out.stat().st_size == 0:
         return f"FAIL {job['name']} rc={rc} {jd}/generate.log"
-    register(out, rgba, PAINT / "painted" / f"{job['name']}.png", edit="edit_of" in job)
+    register(out, rgba, PAINT / "painted" / f"{job['name']}.png", edit="edit_of" in job, head=is_head(job))
     return f"ok {job['name']}"
 
 
@@ -159,7 +163,7 @@ def bbox_ink(im):
     return g.getbbox()
 
 
-def register(painted_path, render_rgba, dest, edit=False):
+def register(painted_path, render_rgba, dest, edit=False, head=False):
     """Fit the painted figure's bounding box onto the render's silhouette box."""
     dest.parent.mkdir(parents=True, exist_ok=True)
     p = Image.open(painted_path).convert("RGB")
@@ -172,8 +176,9 @@ def register(painted_path, render_rgba, dest, edit=False):
             if max(p.getpixel(xy)) < 40:
                 ImageDraw.floodfill(p, xy, (255, 255, 255), thresh=70)
     W, H = render_rgba.size
-    if edit:  # edits keep the neutral face's registered framing: just match the canvas
-        fill_silhouette(p.resize((W, H), Image.LANCZOS), render_rgba).save(dest)
+    if edit:  # edits start from the registered neutral face; re-fit the head outline in case it drifted
+        c = p.resize((W, H), Image.LANCZOS)
+        fill_silhouette(warp_head(c, render_rgba, c), render_rgba).save(dest)
         return
     rb, pb = bbox_alpha(render_rgba), bbox_ink(p)
     if not rb or not pb:
@@ -182,7 +187,75 @@ def register(painted_path, render_rgba, dest, edit=False):
     crop = p.crop(pb).resize((rb[2] - rb[0], rb[3] - rb[1]), Image.LANCZOS)
     canvas = Image.new("RGB", (W, H), (255, 255, 255))
     canvas.paste(crop, rb[:2])
+    if head:
+        canvas = warp_head(p, render_rgba, canvas)
     fill_silhouette(canvas, render_rgba).save(dest)
+
+
+def _edges(mask, rows):
+    """Left/right silhouette edge per row (smoothed), -1 where the row is empty."""
+    import numpy as np
+    L = np.full(len(rows), -1.0)
+    R = np.full(len(rows), -1.0)
+    for i, y in enumerate(rows):
+        xs = np.nonzero(mask[y])[0]
+        if len(xs) > 3:
+            L[i], R[i] = xs[0], xs[-1]
+    for arr in (L, R):  # 7-row median to ignore stray strands
+        ok = arr >= 0
+        src = arr.copy()
+        for i in range(len(arr)):
+            if ok[i]:
+                w = src[max(0, i - 3):i + 4]
+                arr[i] = np.median(w[w >= 0])
+    return L, R
+
+
+def _head_rows(mask):
+    """Top of the silhouette and the neck (narrowest row between head and shoulders)."""
+    import numpy as np
+    rows = np.nonzero(mask.any(axis=1))[0]
+    top, bottom = rows[0], rows[-1]
+    widths = mask.sum(axis=1).astype(float)
+    lo, hi = top + int((bottom - top) * 0.25), top + int((bottom - top) * 0.75)
+    neck = lo + int(np.argmin(widths[lo:hi]))
+    return top, neck
+
+
+def warp_head(painted, render_rgba, canvas):
+    """Row-by-row warp of the painted head so its outline lands exactly on the 3D head outline:
+    crown -> crown, neck -> neck, and each row's left/right edge onto the mesh edge.
+    Fixes jawlines and hair masses drawn a little smaller or larger than the model."""
+    import numpy as np
+    W, H = render_rgba.size
+    P = np.asarray(painted.resize((W, H), Image.LANCZOS) if painted.size != (W, H) else painted, dtype=np.float32)
+    pm = P.min(axis=2) < 236
+    rm = np.asarray(render_rgba.split()[3]) > 20
+    try:
+        rt, rn = _head_rows(rm)
+        pt, pn = _head_rows(pm)
+    except (IndexError, ValueError):
+        return canvas
+    if rn - rt < 20 or pn - pt < 20:
+        return canvas
+    out = np.asarray(canvas, dtype=np.float32).copy()
+    ys_t = np.arange(rt, rn + 1)
+    ys_s = np.clip(np.round(pt + (ys_t - rt) * (pn - pt) / (rn - rt)).astype(int), 0, H - 1)
+    Lt, Rt = _edges(rm, ys_t)
+    Ls, Rs = _edges(pm, ys_s)
+    xs = np.arange(W, dtype=np.float32)
+    for i, (yt, ysrc) in enumerate(zip(ys_t, ys_s)):
+        if Lt[i] < 0 or Ls[i] < 0 or Rt[i] - Lt[i] < 4 or Rs[i] - Ls[i] < 4:
+            continue
+        u = Ls[i] + (xs - Lt[i]) * (Rs[i] - Ls[i]) / (Rt[i] - Lt[i])
+        inside = (xs >= Lt[i] - 2) & (xs <= Rt[i] + 2)
+        u = np.clip(u, 0, W - 1)
+        u0 = np.floor(u).astype(int)
+        u1 = np.minimum(u0 + 1, W - 1)
+        f = (u - u0)[:, None]
+        row = P[ysrc, u0] * (1 - f) + P[ysrc, u1] * f
+        out[yt, inside] = row[inside]
+    return Image.fromarray(out.clip(0, 255).astype("uint8"))
 
 
 def fill_silhouette(canvas, render_rgba, iters=90, pad=18):
@@ -226,7 +299,8 @@ def reregister():
         if not dirs:
             continue
         render = Image.open(PAINT / "renders" / f"{job['src']}.png").convert("RGBA")
-        register(dirs[-1] / "result.png", render, PAINT / "painted" / f"{job['name']}.png", edit="edit_of" in job)
+        register(dirs[-1] / "result.png", render, PAINT / "painted" / f"{job['name']}.png", edit="edit_of" in job,
+                 head=is_head(job))
         print("reregistered", job["name"])
 
 

@@ -1123,18 +1123,18 @@ def build_hair(root_col):
 
     def shaggy(bm, seed, sweep=0.0, n=40, front_end=78, length=1.0):
         rng = random.Random(seed)
-        hair_cap(bm, rad(front_end - 8), rad(95), rad(115), lift=1.09)
+        hair_cap(bm, rad(front_end - 8), rad(95), rad(115), lift=1.05)
         for i in range(n):
             th = 2 * math.pi * i / n + rng.uniform(-0.1, 0.1)
             front = math.cos(th)
             end = rad(front_end) if front > 0.6 else rad(98 + 18 * max(-front, 0) * length)
             clump(bm, flow(th, rad(rng.uniform(0, 25)), end + rad(rng.uniform(-8, 8)),
-                           dtheta=sweep + rng.uniform(-0.3, 0.3), lift0=1.13, lift1=1.3 + rng.uniform(0, 0.1),
-                           curl=rng.uniform(0.01, 0.035)),
-                  width=rng.uniform(0.04, 0.056), thick=0.02)
+                           dtheta=sweep + rng.uniform(-0.3, 0.3), lift0=1.07, lift1=1.15 + rng.uniform(0, 0.05),
+                           curl=rng.uniform(0.005, 0.02)),
+                  width=rng.uniform(0.036, 0.05), thick=0.017)
         for i in range(14):  # crown tufts for the tousled silhouette
             th = rng.uniform(0, 2 * math.pi)
-            clump(bm, flow(th, rad(3), rad(rng.uniform(35, 55)), steps=5, lift0=1.12, lift1=1.36, curl=0.035,
+            clump(bm, flow(th, rad(3), rad(rng.uniform(35, 55)), steps=5, lift0=1.07, lift1=1.2, curl=0.02,
                            dtheta=sweep * 0.5), width=0.03, thick=0.016)
 
     # 01 tousled (base design)
