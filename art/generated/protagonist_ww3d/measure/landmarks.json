@@ -1,0 +1,10 @@
+{
+  "source": "assets/protagonist_customization/바운티헤이븐_주인공_디자인_시트.png (1448x1086), crops written by measure step: front box (7,106,282,742), side box (494,106,650,742)",
+  "method": "Read off 2x/5x gridded crops (measure/grid_front.png, grid_front_head.png, grid_side.png). Values are crop pixels; y grows downward, sole = ground.",
+  "front_y": {"hair_top": 8, "skull_top": 22, "brow": 52, "eye": 61, "nose": 73, "mouth": 82, "chin": 89,
+              "neck_base": 100, "shoulder": 128, "armpit": 165, "elbow": 237, "waist": 257, "wrist": 300,
+              "crotch": 338, "fingertip": 370, "knee": 435, "boot_top": 520, "ankle": 578, "sole": 618},
+  "front_x": {"center": 124.5, "eye_l": 112, "eye_r": 137, "face_w": 51, "hair_w": 91, "shoulder_w": 170,
+              "hip_w": 140, "feet_span": 125, "eye_w": 16},
+  "side_depth": {"head": 70, "hair": 85, "chest": 62, "thigh": 65, "boot_len": 100}
+}

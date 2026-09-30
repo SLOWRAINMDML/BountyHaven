@@ -1,0 +1,14 @@
+run 01_ww_turnaround
+ok 01_ww_turnaround
+run 02_ww_face
+ok 02_ww_face
+run 03_ww_face_parts
+ok 03_ww_face_parts
+run 04_ww_emblem
+ok 04_ww_emblem
+run 05_ww_sigil
+ok 05_ww_sigil
+run 06_ww_vfx_keyart
+ok 06_ww_vfx_keyart
+run 07_ww_cloth_swatches
+ok 07_ww_cloth_swatches
