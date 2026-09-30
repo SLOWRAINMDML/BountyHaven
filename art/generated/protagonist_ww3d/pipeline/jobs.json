@@ -1,26 +1,73 @@
 {
-  "style": "Premium modern 3D anime action-RPG character art in the spirit of current anime open-world games: clean cel shading with a soft two-step gradient, crisp thin dark-brown lineart, gentle cool rim light, readable layered costume detail with trims, straps and small asymmetric accents, faint warm-amber glowing tech inlays. An ORIGINAL character: do not copy or resemble any existing game character. Keep the BountyHaven identity and palette exactly: rust-red scarf/cloak, cream canvas jacket, dark navy undershirt, brown leather harness and gloves, dark grey trousers, brown boots, warm brown hair, warm light-tan skin. No text, no labels, no numbers, no watermark, no UI.",
-  "jobs": [
-    {"name": "01_ww_turnaround", "size": "1536x1024",
-     "refs": ["assets/protagonist_customization/바운티헤이븐_주인공_디자인_시트.png", "assets/protagonist_customization/현상금의_하늘_주인공_의상_시트.png"],
-     "prompt": "Orthographic character model turnaround of the attached BountyHaven protagonist redrawn as a 3D anime-game character: FRONT view, exact LEFT SIDE view (profile, facing left), BACK view, side by side, full body head to boots, relaxed A-pose standing straight, arms slightly away from the body, same body proportions (about 7 heads tall, adult young man) and same costume layout as the attached design sheet front/side/back views. Flat plain very light grey background, even lighting, no cast shadows on the background, all three figures the same height and aligned on one ground line."},
-    {"name": "02_ww_face", "size": "1536x1024",
-     "refs": ["assets/protagonist_customization/바운티헤이븐_얼굴_커스터마이징_시트.png", "assets/protagonist_customization/바운티헤이븐_주인공_디자인_시트.png"],
-     "prompt": "Head and shoulders model sheet of the attached protagonist as a 3D anime-game character: FRONT view, THREE-QUARTER view, exact SIDE profile, neutral calm confident expression. Face keeps the balanced default shape of the attached face sheet: soft but defined jaw with a rounded (not pointy) chin, straight nose, warm amber-brown eyes with a clear catchlight, medium-thick brows. Messy tousled warm brown hair built from large clean clumps, no shiny highlight bands on the hair. Rust-red scarf around the neck, dark collar. Flat plain very light grey background."},
-    {"name": "03_ww_face_parts", "size": "1024x1024",
-     "refs": ["assets/protagonist_customization/바운티헤이븐_얼굴_커스터마이징_시트.png"],
-     "prompt": "Flat 2D texture atlas of anime-game facial feature decals for the attached protagonist, each element isolated and centered in its own cell of a 2x2 grid on a pure flat bright green (#00FF00) background with generous spacing: top-left a single RIGHT eye seen from the front (upper lash line dark brown, warm amber-brown iris with darker ring, dark pupil, one white catchlight, thin lower lash line), top-right the matching LEFT eye (mirror), bottom-left a pair of medium-thick dark brown eyebrows side by side, bottom-right a small closed calm mouth line with a tiny lower lip shadow. Clean vector-like cel shading, no skin around the elements, no face, no shadows on the background."},
-    {"name": "04_ww_emblem", "size": "1024x1024",
-     "refs": ["assets/protagonist_customization/바운티헤이븐_주인공_디자인_시트.png"],
-     "prompt": "A single clean compass-rose emblem like the one painted on the protagonist's rust-red cloak and shoulder patch in the attached sheet: eight-pointed star inside a thin circle with small tick marks, drawn in pure white on a pure flat black background, centered, symmetric, crisp edges, no texture, no text."},
-    {"name": "05_ww_sigil", "size": "1024x1024",
-     "refs": ["assets/protagonist_customization/바운티헤이븐_주인공_디자인_시트.png"],
-     "prompt": "A glowing magic-tech ground sigil for a skill effect in a 3D anime action game, seen exactly top-down: concentric rings, a compass-rose star at the center, fine navigation tick marks, small rotating glyph-like segments (abstract, not letters), thin hex lattice fragments. Pure white and light-grey line art only on a pure flat black background, perfectly centered and circular, crisp, no color, no text."},
-    {"name": "06_ww_vfx_keyart", "size": "1536x1024",
-     "refs": ["assets/protagonist_customization/바운티헤이븐_주인공_디자인_시트.png", "assets/protagonist_customization/바운티헤이븐_주인공_포즈_시트.png"],
-     "prompt": "Dynamic skill-cast key art of the attached protagonist as a 3D anime-game character: mid-leap slashing pose with a short blade, the rust-red cloak and scarf whipping, huge flashy VFX: sweeping crescent energy slash arcs in warm gold and ember orange with cool cyan edges, a glowing compass-rose sigil on the ground, flying sparks and embers, light streaks, soft bloom. Industrial frontier harbor at dusk in the background, blurred. Composition centered, full figure visible."},
-    {"name": "07_ww_cloth_swatches", "size": "1024x1024",
-     "refs": ["assets/protagonist_customization/바운티헤이븐_주인공_디자인_시트.png"],
-     "prompt": "Four seamless tileable material swatches for anime-game toon textures in a 2x2 grid filling the whole image edge to edge with no borders or gaps: top-left weathered rust-red canvas with subtle faded patches, top-right cream canvas with faint grime, bottom-left dark grey twill cloth, bottom-right worn brown leather with light scuffs. Low-contrast, painterly, flat lighting (no directional shading), suitable to be multiplied over cel shading."}
-  ]
+ "style": "Premium modern 3D anime action-RPG character art in the spirit of current anime open-world games: clean cel shading with a soft two-step gradient, crisp thin dark-brown lineart, gentle cool rim light, readable layered costume detail with trims, straps and small asymmetric accents, faint warm-amber glowing tech inlays. An ORIGINAL character: do not copy or resemble any existing game character. Keep the BountyHaven identity and palette exactly: rust-red scarf/cloak, cream canvas jacket, dark navy undershirt, brown leather harness and gloves, dark grey trousers, brown boots, warm brown hair, warm light-tan skin. No text, no labels, no numbers, no watermark, no UI.",
+ "jobs": [
+  {
+   "name": "01_ww_turnaround",
+   "size": "1536x1024",
+   "refs": [
+    "assets/protagonist_customization/바운티헤이븐_주인공_디자인_시트.png",
+    "assets/protagonist_customization/현상금의_하늘_주인공_의상_시트.png"
+   ],
+   "prompt": "Orthographic character model turnaround of the attached BountyHaven protagonist redrawn as a 3D anime-game character: FRONT view, exact LEFT SIDE view (profile, facing left), BACK view, side by side, full body head to boots, relaxed A-pose standing straight, arms slightly away from the body, same body proportions (about 7 heads tall, adult young man) and same costume layout as the attached design sheet front/side/back views. Flat plain very light grey background, even lighting, no cast shadows on the background, all three figures the same height and aligned on one ground line."
+  },
+  {
+   "name": "02_ww_face",
+   "size": "1536x1024",
+   "refs": [
+    "assets/protagonist_customization/바운티헤이븐_얼굴_커스터마이징_시트.png",
+    "assets/protagonist_customization/바운티헤이븐_주인공_디자인_시트.png"
+   ],
+   "prompt": "Head and shoulders model sheet of the attached protagonist as a 3D anime-game character: FRONT view, THREE-QUARTER view, exact SIDE profile, neutral calm confident expression. Face keeps the balanced default shape of the attached face sheet: soft but defined jaw with a rounded (not pointy) chin, straight nose, warm amber-brown eyes with a clear catchlight, medium-thick brows. Messy tousled warm brown hair built from large clean clumps, no shiny highlight bands on the hair. Rust-red scarf around the neck, dark collar. Flat plain very light grey background."
+  },
+  {
+   "name": "03_ww_face_parts",
+   "size": "1024x1024",
+   "refs": [
+    "assets/protagonist_customization/바운티헤이븐_얼굴_커스터마이징_시트.png"
+   ],
+   "prompt": "Flat 2D texture atlas of anime-game facial feature decals for the attached protagonist, each element isolated and centered in its own cell of a 2x2 grid on a pure flat bright green (#00FF00) background with generous spacing: top-left a single RIGHT eye seen from the front (upper lash line dark brown, warm amber-brown iris with darker ring, dark pupil, one white catchlight, thin lower lash line), top-right the matching LEFT eye (mirror), bottom-left a pair of medium-thick dark brown eyebrows side by side, bottom-right a small closed calm mouth line with a tiny lower lip shadow. Clean vector-like cel shading, no skin around the elements, no face, no shadows on the background."
+  },
+  {
+   "name": "04_ww_emblem",
+   "size": "1024x1024",
+   "refs": [
+    "assets/protagonist_customization/바운티헤이븐_주인공_디자인_시트.png"
+   ],
+   "prompt": "A single clean compass-rose emblem like the one painted on the protagonist's rust-red cloak and shoulder patch in the attached sheet: eight-pointed star inside a thin circle with small tick marks, drawn in pure white on a pure flat black background, centered, symmetric, crisp edges, no texture, no text."
+  },
+  {
+   "name": "05_ww_sigil",
+   "size": "1024x1024",
+   "refs": [
+    "assets/protagonist_customization/바운티헤이븐_주인공_디자인_시트.png"
+   ],
+   "prompt": "A glowing magic-tech ground sigil for a skill effect in a 3D anime action game, seen exactly top-down: concentric rings, a compass-rose star at the center, fine navigation tick marks, small rotating glyph-like segments (abstract, not letters), thin hex lattice fragments. Pure white and light-grey line art only on a pure flat black background, perfectly centered and circular, crisp, no color, no text."
+  },
+  {
+   "name": "06_ww_vfx_keyart",
+   "size": "1536x1024",
+   "refs": [
+    "assets/protagonist_customization/바운티헤이븐_주인공_디자인_시트.png",
+    "assets/protagonist_customization/바운티헤이븐_주인공_포즈_시트.png"
+   ],
+   "prompt": "Dynamic skill-cast key art of the attached protagonist as a 3D anime-game character: mid-leap slashing pose with a short blade, the rust-red cloak and scarf whipping, huge flashy VFX: sweeping crescent energy slash arcs in warm gold and ember orange with cool cyan edges, a glowing compass-rose sigil on the ground, flying sparks and embers, light streaks, soft bloom. Industrial frontier harbor at dusk in the background, blurred. Composition centered, full figure visible."
+  },
+  {
+   "name": "07_ww_cloth_swatches",
+   "size": "1024x1024",
+   "refs": [
+    "assets/protagonist_customization/바운티헤이븐_주인공_디자인_시트.png"
+   ],
+   "prompt": "Four seamless tileable material swatches for anime-game toon textures in a 2x2 grid filling the whole image edge to edge with no borders or gaps: top-left weathered rust-red canvas with subtle faded patches, top-right cream canvas with faint grime, bottom-left dark grey twill cloth, bottom-right worn brown leather with light scuffs. Low-contrast, painterly, flat lighting (no directional shading), suitable to be multiplied over cel shading."
+  },
+  {
+   "name": "08_ww_face_parts_v2",
+   "size": "1024x1024",
+   "refs": [
+    "assets/protagonist_customization/바운티헤이븐_주인공_표정_시트.png",
+    "assets/protagonist_customization/바운티헤이븐_얼굴_커스터마이징_시트.png"
+   ],
+   "prompt": "Flat 2D texture atlas of facial feature decals for the attached protagonist, matching his NEUTRAL face in the expression sheet exactly: each element isolated in its own cell of a 2x2 grid on a fully transparent background with generous spacing. Top-left: his RIGHT eye seen straight from the front: narrow almond shape (about twice as wide as tall), thick dark-brown upper lid line that extends slightly past the outer corner, thin lower lid line, warm amber-brown iris partly covered by the upper lid, dark pupil, one small white catchlight, no long separate eyelashes. Top-right: the matching LEFT eye (mirror). Bottom-left: his two thick straight dark-brown eyebrows, slightly angled down toward the nose (determined look), side by side with the gap between them as in the sheet. Bottom-right: his small calm closed mouth: one short dark line with a soft lower-lip shade below. Clean anime-game cel style, no skin, no face, no shadows."
+  }
+ ]
 }

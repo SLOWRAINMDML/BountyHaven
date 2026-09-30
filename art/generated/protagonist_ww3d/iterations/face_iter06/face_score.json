@@ -1,0 +1,49 @@
+{
+ "views": {
+  "front": {
+   "lm_err_pct": {
+    "brow_r": 0.8,
+    "brow_l": 3.1,
+    "nose": 13.3,
+    "mouth": 0.4,
+    "mouth_rc": 3.8,
+    "mouth_lc": 6.1,
+    "chin": 2.6
+   },
+   "mean_lm_err_pct": 4.3,
+   "skin_iou": 0.5687,
+   "skin_color_err": 1.4
+  },
+  "q34": {
+   "lm_err_pct": {
+    "nose": 13.4,
+    "mouth": 30.7,
+    "chin": 1.9,
+    "ear": 19.3
+   },
+   "mean_lm_err_pct": 16.32,
+   "skin_iou": 0.6247,
+   "skin_color_err": 5.4
+  },
+  "side": {
+   "lm_err_pct": {
+    "nose": 31.7,
+    "mouth": 16.1,
+    "ear": 16.0
+   },
+   "mean_lm_err_pct": 21.27,
+   "skin_iou": 0.6521,
+   "skin_color_err": 7.3
+  }
+ },
+ "mean_lm_err_pct": 13.96,
+ "mean_skin_iou": 0.6152,
+ "skin_color_err": 4.7,
+ "note": "nose bridge rooted flush with the face at the brow line and sloping out to the tip (it was a 2 cm ridge hiding the far eye in 3/4); slimmer nose",
+ "mesh": {
+  "chin_z": 1.533841848373413,
+  "eye_z": 1.625344262295082,
+  "iod": 0.068,
+  "face_w_eye": 0.13362938165664673
+ }
+}

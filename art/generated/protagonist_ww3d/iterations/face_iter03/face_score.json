@@ -1,0 +1,49 @@
+{
+ "views": {
+  "front": {
+   "lm_err_pct": {
+    "brow_r": 0.2,
+    "brow_l": 2.1,
+    "nose": 7.5,
+    "mouth": 3.9,
+    "mouth_rc": 6.7,
+    "mouth_lc": 5.3,
+    "chin": 1.9
+   },
+   "mean_lm_err_pct": 3.94,
+   "skin_iou": 0.516,
+   "skin_color_err": 61.3
+  },
+  "q34": {
+   "lm_err_pct": {
+    "nose": 21.8,
+    "mouth": 40.6,
+    "chin": 1.9,
+    "ear": 19.3
+   },
+   "mean_lm_err_pct": 20.9,
+   "skin_iou": 0.6224,
+   "skin_color_err": 65.1
+  },
+  "side": {
+   "lm_err_pct": {
+    "nose": 39.0,
+    "mouth": 26.7,
+    "ear": 16.0
+   },
+   "mean_lm_err_pct": 27.23,
+   "skin_iou": 0.6456,
+   "skin_color_err": 68.8
+  }
+ },
+ "mean_lm_err_pct": 17.36,
+ "mean_skin_iou": 0.5947,
+ "skin_color_err": 65.1,
+ "note": "codex v2 decals (narrow almond eyes, heavy upper lid, angled thick brows) sized to the measured eye width 0.56 IOD and brow length 0.65 IOD",
+ "mesh": {
+  "chin_z": 1.533841848373413,
+  "eye_z": 1.625344262295082,
+  "iod": 0.068,
+  "face_w_eye": 0.13362938165664673
+ }
+}

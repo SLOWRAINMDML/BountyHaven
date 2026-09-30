@@ -1,0 +1,49 @@
+{
+ "views": {
+  "front": {
+   "lm_err_pct": {
+    "brow_r": 0.3,
+    "brow_l": 2.2,
+    "nose": 2.5,
+    "mouth": 6.9,
+    "mouth_rc": 9.1,
+    "mouth_lc": 7.1,
+    "chin": 2.8
+   },
+   "mean_lm_err_pct": 4.41,
+   "skin_iou": 0.5256,
+   "skin_color_err": 1.4
+  },
+  "q34": {
+   "lm_err_pct": {
+    "nose": 17.2,
+    "mouth": 30.7,
+    "chin": 1.9,
+    "ear": 19.3
+   },
+   "mean_lm_err_pct": 17.27,
+   "skin_iou": 0.624,
+   "skin_color_err": 4.7
+  },
+  "side": {
+   "lm_err_pct": {
+    "nose": 35.2,
+    "mouth": 16.1,
+    "ear": 16.0
+   },
+   "mean_lm_err_pct": 22.43,
+   "skin_iou": 0.6636,
+   "skin_color_err": 17.5
+  }
+ },
+ "mean_lm_err_pct": 14.7,
+ "mean_skin_iou": 0.6044,
+ "skin_color_err": 7.9,
+ "note": "multi-view compromise: nose tip/mouth lowered (side+q34 both ask for it), lip plane recessed ~1 cm behind the nose tip",
+ "mesh": {
+  "chin_z": 1.533841848373413,
+  "eye_z": 1.625344262295082,
+  "iod": 0.068,
+  "face_w_eye": 0.13362938165664673
+ }
+}

@@ -1,0 +1,49 @@
+{
+ "views": {
+  "front": {
+   "lm_err_pct": {
+    "brow_r": 5.8,
+    "brow_l": 5.7,
+    "nose": 7.5,
+    "mouth": 3.9,
+    "mouth_rc": 5.8,
+    "mouth_lc": 4.1,
+    "chin": 1.9
+   },
+   "mean_lm_err_pct": 4.96,
+   "skin_iou": 0.5209,
+   "skin_color_err": 61.3
+  },
+  "q34": {
+   "lm_err_pct": {
+    "nose": 21.8,
+    "mouth": 40.6,
+    "chin": 1.9,
+    "ear": 19.3
+   },
+   "mean_lm_err_pct": 20.9,
+   "skin_iou": 0.6243,
+   "skin_color_err": 65.1
+  },
+  "side": {
+   "lm_err_pct": {
+    "nose": 39.0,
+    "mouth": 26.7,
+    "ear": 16.0
+   },
+   "mean_lm_err_pct": 27.23,
+   "skin_iou": 0.6454,
+   "skin_color_err": 68.8
+  }
+ },
+ "mean_lm_err_pct": 17.7,
+ "mean_skin_iou": 0.5969,
+ "skin_color_err": 65.1,
+ "note": "profile from the side tile: nose/lips/chin project forward (0.41/0.34/0.24 eye-chin ahead of the eye), jaw underside slopes up to the ear, ear moved forward to eye level",
+ "mesh": {
+  "chin_z": 1.533841848373413,
+  "eye_z": 1.625344262295082,
+  "iod": 0.068,
+  "face_w_eye": 0.13362938165664673
+ }
+}

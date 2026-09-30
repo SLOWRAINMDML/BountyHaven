@@ -1,0 +1,49 @@
+{
+ "views": {
+  "front": {
+   "lm_err_pct": {
+    "brow_r": 16.1,
+    "brow_l": 19.0,
+    "nose": 28.5,
+    "mouth": 3.2,
+    "mouth_rc": 12.0,
+    "mouth_lc": 16.1,
+    "chin": 11.0
+   },
+   "mean_lm_err_pct": 15.13,
+   "skin_iou": 0.5452,
+   "skin_color_err": 61.3
+  },
+  "q34": {
+   "lm_err_pct": {
+    "nose": 30.4,
+    "mouth": 4.6,
+    "chin": 41.0,
+    "ear": 1.7
+   },
+   "mean_lm_err_pct": 19.43,
+   "skin_iou": 0.5874,
+   "skin_color_err": 65.1
+  },
+  "side": {
+   "lm_err_pct": {
+    "nose": 42.8,
+    "mouth": 13.5,
+    "ear": 46.0
+   },
+   "mean_lm_err_pct": 34.1,
+   "skin_iou": 0.5773,
+   "skin_color_err": 68.8
+  }
+ },
+ "mean_lm_err_pct": 22.89,
+ "mean_skin_iou": 0.57,
+ "skin_color_err": 65.1,
+ "note": "baseline (model at a663756)",
+ "mesh": {
+  "chin_z": 1.5408438444137573,
+  "eye_z": 1.625344262295082,
+  "iod": 0.073,
+  "face_w_eye": 0.14868085086345673
+ }
+}

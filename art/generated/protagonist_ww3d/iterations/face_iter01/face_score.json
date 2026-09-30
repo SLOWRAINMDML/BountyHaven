@@ -1,0 +1,49 @@
+{
+ "views": {
+  "front": {
+   "lm_err_pct": {
+    "brow_r": 5.8,
+    "brow_l": 5.8,
+    "nose": 11.6,
+    "mouth": 1.7,
+    "mouth_rc": 4.4,
+    "mouth_lc": 3.6,
+    "chin": 0.8
+   },
+   "mean_lm_err_pct": 4.81,
+   "skin_iou": 0.5362,
+   "skin_color_err": 61.3
+  },
+  "q34": {
+   "lm_err_pct": {
+    "nose": 20.8,
+    "mouth": 17.4,
+    "chin": 26.5,
+    "ear": 5.5
+   },
+   "mean_lm_err_pct": 17.55,
+   "skin_iou": 0.586,
+   "skin_color_err": 65.1
+  },
+  "side": {
+   "lm_err_pct": {
+    "nose": 38.6,
+    "mouth": 22.7,
+    "ear": 31.9
+   },
+   "mean_lm_err_pct": 31.07,
+   "skin_iou": 0.5965,
+   "skin_color_err": 68.8
+  }
+ },
+ "mean_lm_err_pct": 17.81,
+ "mean_skin_iou": 0.5729,
+ "skin_color_err": 65.1,
+ "note": "measured proportions: IOD 0.068, chin 1.31 IOD below the eyes, brows low (0.2 IOD), nose/mouth at 0.54/0.86 IOD, cheek/jaw widths from the front tile, deeper profile",
+ "mesh": {
+  "chin_z": 1.533841848373413,
+  "eye_z": 1.625344262295082,
+  "iod": 0.068,
+  "face_w_eye": 0.1329747959971428
+ }
+}

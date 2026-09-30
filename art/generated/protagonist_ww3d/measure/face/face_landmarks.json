@@ -1,0 +1,8 @@
+{
+ "source": "assets/protagonist_customization: expression sheet NEUTRAL tile (front) and PROFILE tile (side), face sheet NEUTRAL PORTRAIT (q34). Crops in measure/face/ref_*.png; points read off grid_*.png (crop pixels).",
+ "front": {"eye_r": [57.5, 90], "eye_l": [104, 88], "brow_r": [57, 80], "brow_l": [104, 79], "nose": [80, 114],
+           "mouth": [82, 129], "mouth_rc": [67.5, 129], "mouth_lc": [97.5, 129], "chin": [82.5, 150]},
+ "front_widths_iod": {"eye_level": 1.81, "nose_level": 1.72, "mouth_level": 1.55, "chin_flat": 0.47, "eye_w": 0.56, "eye_h": 0.26},
+ "q34": {"eye_far": [62, 180], "eye_near": [133, 152], "nose": [80, 207], "mouth": [110, 236], "chin": [110, 297], "ear": [247, 177]},
+ "side": {"eye": [54, 67], "nose": [37, 94], "mouth": [41, 101], "chin": [42, 109], "ear": [89, 69]}
+}

@@ -1,0 +1,49 @@
+{
+ "views": {
+  "front": {
+   "lm_err_pct": {
+    "brow_r": 0.2,
+    "brow_l": 2.1,
+    "nose": 7.5,
+    "mouth": 3.9,
+    "mouth_rc": 6.7,
+    "mouth_lc": 5.3,
+    "chin": 1.9
+   },
+   "mean_lm_err_pct": 3.94,
+   "skin_iou": 0.5163,
+   "skin_color_err": 1.4
+  },
+  "q34": {
+   "lm_err_pct": {
+    "nose": 21.8,
+    "mouth": 40.6,
+    "chin": 1.9,
+    "ear": 19.3
+   },
+   "mean_lm_err_pct": 20.9,
+   "skin_iou": 0.6218,
+   "skin_color_err": 4.7
+  },
+  "side": {
+   "lm_err_pct": {
+    "nose": 39.0,
+    "mouth": 26.7,
+    "ear": 16.0
+   },
+   "mean_lm_err_pct": 27.23,
+   "skin_iou": 0.6667,
+   "skin_color_err": 17.5
+  }
+ },
+ "mean_lm_err_pct": 17.36,
+ "mean_skin_iou": 0.6016,
+ "skin_color_err": 7.9,
+ "note": "skin tone sampled from the illustration (lit 214,158,118 / shade ~160,100,72) for face, nose, ears and neck; softer, warmer blush",
+ "mesh": {
+  "chin_z": 1.533841848373413,
+  "eye_z": 1.625344262295082,
+  "iod": 0.068,
+  "face_w_eye": 0.13362938165664673
+ }
+}

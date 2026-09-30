@@ -36,6 +36,20 @@ for d in sorted(glob.glob(os.path.join(ROOT, "iterations", "iter*"))):
             it[extra.split(".")[0]] = jpg(os.path.join(d, extra), f"{n}_{extra.split('.')[0]}.jpg", 1600)
     iters.append(it)
 
+faces = []
+for d in sorted(glob.glob(os.path.join(ROOT, "iterations", "face_iter*"))):
+    if not os.path.exists(os.path.join(d, "face_score.json")):
+        continue
+    n = os.path.basename(d)
+    fs = json.load(open(os.path.join(d, "face_score.json")))
+    notes = open(os.path.join(d, "notes.md")).read().split("\n", 2)[-1].strip() if os.path.exists(os.path.join(d, "notes.md")) else fs["note"]
+    f = {"name": n, "score": fs, "notes": notes, "sheet": jpg(os.path.join(d, "face_sheet.png"), f"{n}_sheet.jpg", 2600)}
+    if any(os.path.exists(os.path.join(d, "face_before_after" + e)) for e in (".png", ".jpg")):
+        f["ba"] = jpg(os.path.join(d, "face_before_after.png"), f"{n}_before_after.jpg", 1400)
+    if any(os.path.exists(os.path.join(d, "godot" + e)) for e in (".png", ".jpg")):
+        f["godot"] = jpg(os.path.join(d, "godot.png"), f"{n}_godot.jpg", 1600)
+    faces.append(f)
+
 last = iters[-1]
 refs = [("design sheet (canonical)", os.path.join(ROOT, "..", "..", "..", "assets", "protagonist_customization", "바운티헤이븐_주인공_디자인_시트.png")),
         ("Codex turnaround (style target)", os.path.join(ROOT, "concepts", "01_ww_turnaround.png")),
@@ -63,6 +77,39 @@ rows = "".join(
     + "".join(f'<td>{i["score"]["iou"][v]["iou"]:.3f}</td>' for v in ("front", "q34", "side", "back"))
     + f'<td>{i["score"]["mean_height_err_pct"]:.2f}%</td><td>{i["score"]["mean_width_err_pct"]:.1f}%</td></tr>'
     for i in iters)
+
+face_html = ""
+if faces:
+    f0, f1 = faces[0], faces[-1]
+    frows = "".join(
+        f'<tr><td>{f["name"].replace("face_iter", "F")}</td><td>{f["score"]["mean_lm_err_pct"]:.1f}%</td><td>{f["score"]["mean_skin_iou"]:.3f}</td>'
+        f'<td>{f["score"].get("skin_color_err", 0):.0f}</td>'
+        + "".join(f'<td>{f["score"]["views"][v]["mean_lm_err_pct"]:.1f}%</td>' for v in ("front", "q34", "side"))
+        + f'<td class="l">{html.escape(f["notes"])}</td></tr>' for f in faces)
+    fsecs = "".join(f'''<section class="iter" id="{f["name"]}"><header><h3>{f["name"]}</h3><p class="note">{html.escape(f["notes"])}</p>
+  <p class="metrics">landmark error <b>{f["score"]["mean_lm_err_pct"]:.1f}%</b> · outline IoU <b>{f["score"]["mean_skin_iou"]:.3f}</b> · skin colour <b>{f["score"].get("skin_color_err", 0):.0f}</b></p></header>
+  <div class="wide"><a href="{f["sheet"]}"><img src="{f["sheet"]}" alt="{f["name"]} face sheet" loading="lazy"></a></div>
+  {f'<div class="pair"><figure><img src="{f["godot"]}" alt="Godot capture" loading="lazy"><figcaption>Godot 4.7.1 capture</figcaption></figure></div>' if "godot" in f else ""}
+</section>''' for f in reversed(faces))
+    ba = f1.get("ba")
+    face_html = f'''<section id="face10"><div class="eyebrow">얼굴 10회</div><h2 style="font-size:28px">얼굴만 10회 반복</h2>
+<p class="lede">기준은 표정 시트 NEUTRAL(정면), PROFILE(측면), 얼굴 시트 NEUTRAL PORTRAIT(3/4)입니다. 눈·눈썹·코·입·입꼬리·턱·귀 위치를 격자로 재서 기록했습니다. 채점할 때는 두 눈(측면은 눈과 턱)으로 렌더를 일러스트에 정렬하고, 나머지 랜드마크 오차(눈 간격 대비 %), 피부 윤곽 IoU, 피부색 오차를 잽니다. 일러스트마다 머리 각도가 달라서 카메라 각도는 뷰별 허용 범위(정면 ±6°, 3/4 30–66°, 측면 80–100°) 안에서 맞췄습니다. 몸 형태는 바꾸지 않았습니다.</p>
+<div class="grid2" style="margin-top:16px">
+  <div class="card"><h2>전후 비교</h2>{f'<img src="{ba}" alt="face before and after" style="width:100%;border-radius:4px">' if ba else ""}</div>
+  <div class="card"><h2>점수 {f0["name"].replace("face_iter", "F")} → {f1["name"].replace("face_iter", "F")}</h2>
+   <p class="metrics">랜드마크 오차 <b>{f0["score"]["mean_lm_err_pct"]:.1f}% → {f1["score"]["mean_lm_err_pct"]:.1f}%</b> · 윤곽 IoU <b>{f0["score"]["mean_skin_iou"]:.3f} → {f1["score"]["mean_skin_iou"]:.3f}</b> · 피부색 오차 <b>{f0["score"].get("skin_color_err", 0):.0f} → {f1["score"].get("skin_color_err", 0):.0f}</b></p>
+   <div class="scroll"><table><thead><tr><th>iter</th><th>랜드마크</th><th>IoU</th><th>피부색</th><th>정면</th><th>3/4</th><th>측면</th><th class="l">변경</th></tr></thead><tbody>{frows}</tbody></table></div>
+   <h2 style="margin-top:16px">아직 다른 점</h2><ul>
+    <li>일러스트 타일끼리도 비율이 다릅니다. 코 높이가 눈~턱 거리 대비 정면 0.41, 측면 0.64, 3/4 0.31이어서, 3D는 세 뷰를 절충했습니다. 측면(18.9%)과 3/4(15.9%) 오차가 남는 주된 이유입니다.</li>
+    <li>3/4에서 입이 일러스트보다 먼 쪽에 있습니다. 얼굴 앞면을 둥글게 해 봤지만 점수가 나빠져 되돌렸습니다.</li>
+    <li>얼굴 음영은 매끈한 툰 경계에 칠한 형태 그림자를 더한 방식입니다. 일러스트 같은 붓 질감과 볼 주근깨·잡티는 없습니다.</li>
+    <li>머리카락과 스카프는 얼굴 반복 범위 밖이라 그대로입니다. 일러스트의 부스스한 머리와 두건형 스카프와는 다릅니다.</li>
+   </ul></div>
+</div>
+<table style="display:none"></table>
+</section>
+<section><h2>얼굴 반복 기록 (최신순)</h2></section>
+{fsecs}'''
 
 sections = []
 for i in reversed(iters):
@@ -97,7 +144,7 @@ h2 {{ font-size:20px; margin:0 0 12px; }} h3 {{ font-family:"IBM Plex Mono",mono
 .grid2 {{ display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr)); gap:24px; align-items:start; }}
 .card {{ background:var(--panel); border:1px solid var(--line); border-radius:6px; padding:18px; }}
 table {{ border-collapse:collapse; width:100%; font:13px "IBM Plex Mono",monospace; font-variant-numeric:tabular-nums; }}
-th,td {{ padding:5px 8px; border-bottom:1px solid var(--line); text-align:right; }} th:first-child,td:first-child {{ text-align:left; }}
+th,td {{ padding:5px 8px; border-bottom:1px solid var(--line); text-align:right; }} th:first-child,td:first-child,.l {{ text-align:left; }} td.l {{ font-family:"IBM Plex Sans KR",sans-serif; min-width:260px; }}
 th {{ color:var(--mute); font-weight:600; }}
 .scroll {{ overflow-x:auto; }}
 svg {{ width:100%; height:auto; }} .grid {{ stroke:var(--line); }} .tick {{ fill:var(--mute); font:11px "IBM Plex Mono",monospace; }}
@@ -118,6 +165,7 @@ a {{ color:var(--rust); }} a:focus-visible {{ outline:2px solid var(--brass); }}
   <p class="lede">바운티헤이븐 주인공 디자인 시트에서 머리·눈·턱·어깨·허리·무릎 높이를 측정해 몸을 로프트로 만들고, 셀 셰이딩·외곽선·레이어드 의상·헤어 락·VFX를 올렸습니다. 이미지(눈·눈썹·입 데칼, 문양, 시질, 천 텍스처, 스타일 타깃)는 Codex(ima2, GPT OAuth)로 생성했습니다. 반복 {len(iters) - 1}회, 최신은 {last["name"]}.</p>
 </header>
 <section class="hero"><img src="{hero}" alt="latest VFX render"></section>
+{face_html}
 <section class="grid2">
   <div class="card"><h2>실루엣 IoU (일러스트 vs 3D, 4뷰 평균)</h2>{chart}</div>
   <div class="card scroll"><h2>반복별 점수</h2><table><thead><tr><th>iter</th><th>mean</th><th>front</th><th>3/4</th><th>side</th><th>back</th><th>높이 오차</th><th>폭 오차</th></tr></thead><tbody>{rows}</tbody></table>

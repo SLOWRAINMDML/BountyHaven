@@ -240,3 +240,4 @@ if "--vfx" in ARGS:
         cam3 = cam_obj("Cam_beauty", (0.75, -1.35, 1.62), (0.0, 0.0, 1.5), lens=55)
         sun.rotation_euler = (math.radians(55), 0, math.radians(-40))
         render_to(os.path.join(OUT, "beauty_raw.png"), cam3, (1200, 1200))
+exec(open(os.path.join(HERE, "ww_face.py")).read())
