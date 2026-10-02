@@ -50,3 +50,15 @@ python3 run_ima2.py                      # (선택) ima2 서버 127.0.0.1:3333 �
 - 점수: 랜드마크 오차 22.9% → 12.6% (정면 15.1 → 3.0, 3/4 19.4 → 15.9, 측면 34.1 → 18.9), 윤곽 IoU 0.570 → 0.613, 피부색 오차 65 → 4.
 - 주요 변경: 측정 비율, 측면 윤곽, Codex 데칼 v2(`concepts/08_ww_face_parts_v2.png`), 일러스트 피부색, 머리 메시에 조각한 코, 매끈한 얼굴 그림자, 칠한 형태 그림자.
 - 한계: 일러스트 타일끼리 비율이 다릅니다(코 높이가 눈~턱 대비 0.41/0.64/0.31). 3/4 입 위치, 붓 질감, 머리카락·스카프(범위 밖)는 아직 차이가 납니다.
+
+## VRoid 연구 적용 (vroid_v00 → vroid_v03)
+리서치 노트: `docs/vroid_research.md` (VRM 1.0 사양과 VRoid 도움말, 출처 포함). 몸 측정값과 얼굴 랜드마크 맞춤은 유지했습니다.
+
+- 헤어 (`pipeline/ww_hair.py`, `face_spec.hair_mode = "vroid"`): 가이드 그룹(정수리 2층, 앞머리 좌·중·우, 옆, 뒤, 목덜미, 삐침)마다 초승달 단면 다발을 만들고, 끝 가늘어짐·비틀림·끝 말림·랜덤을 줬습니다. 잔머리 그룹과 측정 머리 폭에 맞춘 실루엣 가이드도 넣었습니다. 하이라이트 띠는 없습니다.
+- 얼굴 파츠 (`pipeline/ww_face_layers.py`, `ww_face_parts.py`, `eye_mode = "layered"`): 흰자, 홍채(데칼의 보이는 부분에서 복원, `eye.L/R` 본으로 시선), 하이라이트, 눈꺼풀을 얼굴 눈 구멍(알파 컷) 뒤에 두었습니다. 눈선·눈썹·입·입 안은 얼굴 앞의 데칼 메시입니다.
+- 표정: VRM 프리셋 이름의 셰이프 키 13개(blink, blinkLeft, blinkRight, aa, ih, ou, ee, oh, happy, angry, sad, relaxed, surprised). `exports/expressions.json`에 정리했고, Godot에서는 `hero_ww.gd`의 `set_expression()`으로 씁니다.
+- MToon 1.0: 모든 머티리얼에 shadingShift/Toony, parametric rim, world outline 값을 두고 `exports/palette.json`의 `mtoon`에 기록했습니다. `godot/ww_toon.gdshader`와 `ww_toon_cut.gdshader`가 같은 공식을 씁니다.
+- 스프링본: 헤어 그룹 6개와 망토 3줄의 체인, 머리 충돌 구(`exports/springbones.json`). Godot `SpringBoneSimulator3D`에서 Slash 중 뒷머리 끝이 머리 대비 최대 4.8cm 움직이는 것을 측정했습니다.
+- 점수(V00 → V03): 몸 실루엣 IoU 0.794 → 0.793, 얼굴 랜드마크 12.6% → 12.6%, 얼굴 윤곽 IoU 0.613 → 0.641, 피부색 오차 3.9 → 3.4.
+- 한계: VRM(.vrm) 내보내기는 Blender VRM 애드온이 없어 하지 못했습니다. 일러스트의 가는 곱슬 다발 질감과 볼·입 주변 형태가 바뀌는 표정은 아직 없습니다.
+- 실행: `pipeline/run_vroid.sh <NN> "note" [--vfx --final --glb ...]`, 그다음 `pipeline/godot_verify.sh ../iterations/vroid_vNN`.

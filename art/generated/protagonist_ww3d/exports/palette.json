@@ -18,7 +18,21 @@
    0.06666200758784326,
    0.08221334072555807,
    0.10891317467029452
-  ]
+  ],
+  "mtoon": {
+   "shadingShiftFactor": -0.4947,
+   "shadingToonyFactor": 0.9474,
+   "parametricRimColorFactor": [
+    0.2053,
+    0.3569,
+    0.45
+   ],
+   "parametricRimFresnelPowerFactor": 3.0,
+   "parametricRimLiftFactor": 0.0,
+   "outlineWidthMode": "worldCoordinates",
+   "outlineWidthFactor": 0.0032
+  },
+  "alpha": false
  },
  "BladeEdge": {
   "lit": [
@@ -44,7 +58,21 @@
    0.10891317467029452,
    0.2529353587600891,
    0.35
-  ]
+  ],
+  "mtoon": {
+   "shadingShiftFactor": -0.4947,
+   "shadingToonyFactor": 0.9474,
+   "parametricRimColorFactor": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "parametricRimFresnelPowerFactor": 3.0,
+   "parametricRimLiftFactor": 0.0,
+   "outlineWidthMode": "worldCoordinates",
+   "outlineWidthFactor": 0.0032
+  },
+  "alpha": false
  },
  "Boots": {
   "lit": [
@@ -65,7 +93,21 @@
    0.016721513744659723,
    0.0053113333558688185,
    0.0019326106975838804
-  ]
+  ],
+  "mtoon": {
+   "shadingShiftFactor": -0.4947,
+   "shadingToonyFactor": 0.9474,
+   "parametricRimColorFactor": [
+    0.0797,
+    0.1049,
+    0.15
+   ],
+   "parametricRimFresnelPowerFactor": 3.0,
+   "parametricRimLiftFactor": 0.0,
+   "outlineWidthMode": "worldCoordinates",
+   "outlineWidthFactor": 0.0032
+  },
+  "alpha": false
  },
  "Brass": {
   "lit": [
@@ -86,7 +128,21 @@
    0.09357532106432019,
    0.04463542223469772,
    0.009714347992344111
-  ]
+  ],
+  "mtoon": {
+   "shadingShiftFactor": -0.4947,
+   "shadingToonyFactor": 0.9474,
+   "parametricRimColorFactor": [
+    0.3,
+    0.2379,
+    0.1369
+   ],
+   "parametricRimFresnelPowerFactor": 3.0,
+   "parametricRimLiftFactor": 0.0,
+   "outlineWidthMode": "worldCoordinates",
+   "outlineWidthFactor": 0.0032
+  },
+  "alpha": false
  },
  "Cloak": {
   "lit": [
@@ -107,7 +163,21 @@
    0.1471777741586555,
    0.08221334072555807,
    0.10891317467029452
-  ]
+  ],
+  "mtoon": {
+   "shadingShiftFactor": -0.4947,
+   "shadingToonyFactor": 0.9474,
+   "parametricRimColorFactor": [
+    0.2,
+    0.0913,
+    0.0537
+   ],
+   "parametricRimFresnelPowerFactor": 3.0,
+   "parametricRimLiftFactor": 0.0,
+   "outlineWidthMode": "worldCoordinates",
+   "outlineWidthFactor": 0.0032
+  },
+  "alpha": false
  },
  "EyeWhite": {
   "lit": [
@@ -128,7 +198,21 @@
    0.2404607842541187,
    0.21654000462457285,
    0.20509054438238147
-  ]
+  ],
+  "mtoon": {
+   "shadingShiftFactor": -0.4947,
+   "shadingToonyFactor": 0.9474,
+   "parametricRimColorFactor": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "parametricRimFresnelPowerFactor": 3.0,
+   "parametricRimLiftFactor": 0.0,
+   "outlineWidthMode": "worldCoordinates",
+   "outlineWidthFactor": 0.0032
+  },
+  "alpha": false
  },
  "Face": {
   "lit": [
@@ -149,7 +233,411 @@
    0.18320510432501363,
    0.1255288670741696,
    0.11213354207713364
-  ]
+  ],
+  "mtoon": {
+   "shadingShiftFactor": -0.2737,
+   "shadingToonyFactor": 0.8947,
+   "parametricRimColorFactor": [
+    0.1,
+    0.0699,
+    0.0531
+   ],
+   "parametricRimFresnelPowerFactor": 3.0,
+   "parametricRimLiftFactor": 0.0,
+   "outlineWidthMode": "worldCoordinates",
+   "outlineWidthFactor": 0.0032
+  },
+  "alpha": true
+ },
+ "FPBrowL": {
+  "lit": [
+   255,
+   255,
+   255
+  ],
+  "shade": [
+   225,
+   215,
+   215
+  ],
+  "tex": "fp_brow_L.png",
+  "tex_mix": 1.0,
+  "rim": 0.0,
+  "emit": [],
+  "outline": [
+   0.26575484274328187,
+   0.2404607842541187,
+   0.2404607842541187
+  ],
+  "mtoon": {
+   "shadingShiftFactor": -0.2737,
+   "shadingToonyFactor": 0.8947,
+   "parametricRimColorFactor": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "parametricRimFresnelPowerFactor": 3.0,
+   "parametricRimLiftFactor": 0.0,
+   "outlineWidthMode": "worldCoordinates",
+   "outlineWidthFactor": 0.0032
+  },
+  "alpha": true
+ },
+ "FPBrowR": {
+  "lit": [
+   255,
+   255,
+   255
+  ],
+  "shade": [
+   225,
+   215,
+   215
+  ],
+  "tex": "fp_brow_R.png",
+  "tex_mix": 1.0,
+  "rim": 0.0,
+  "emit": [],
+  "outline": [
+   0.26575484274328187,
+   0.2404607842541187,
+   0.2404607842541187
+  ],
+  "mtoon": {
+   "shadingShiftFactor": -0.2737,
+   "shadingToonyFactor": 0.8947,
+   "parametricRimColorFactor": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "parametricRimFresnelPowerFactor": 3.0,
+   "parametricRimLiftFactor": 0.0,
+   "outlineWidthMode": "worldCoordinates",
+   "outlineWidthFactor": 0.0032
+  },
+  "alpha": true
+ },
+ "FPEyelineL": {
+  "lit": [
+   255,
+   255,
+   255
+  ],
+  "shade": [
+   235,
+   225,
+   225
+  ],
+  "tex": "fp_eyeline_L.png",
+  "tex_mix": 1.0,
+  "rim": 0.0,
+  "emit": [],
+  "outline": [
+   0.2924347270112943,
+   0.26575484274328187,
+   0.26575484274328187
+  ],
+  "mtoon": {
+   "shadingShiftFactor": -0.2737,
+   "shadingToonyFactor": 0.8947,
+   "parametricRimColorFactor": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "parametricRimFresnelPowerFactor": 3.0,
+   "parametricRimLiftFactor": 0.0,
+   "outlineWidthMode": "worldCoordinates",
+   "outlineWidthFactor": 0.0032
+  },
+  "alpha": true
+ },
+ "FPEyelineR": {
+  "lit": [
+   255,
+   255,
+   255
+  ],
+  "shade": [
+   235,
+   225,
+   225
+  ],
+  "tex": "fp_eyeline_R.png",
+  "tex_mix": 1.0,
+  "rim": 0.0,
+  "emit": [],
+  "outline": [
+   0.2924347270112943,
+   0.26575484274328187,
+   0.26575484274328187
+  ],
+  "mtoon": {
+   "shadingShiftFactor": -0.2737,
+   "shadingToonyFactor": 0.8947,
+   "parametricRimColorFactor": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "parametricRimFresnelPowerFactor": 3.0,
+   "parametricRimLiftFactor": 0.0,
+   "outlineWidthMode": "worldCoordinates",
+   "outlineWidthFactor": 0.0032
+  },
+  "alpha": true
+ },
+ "FPEyeWhiteL": {
+  "lit": [
+   255,
+   255,
+   255
+  ],
+  "shade": [
+   225,
+   220,
+   225
+  ],
+  "tex": "fp_eyewhite_L.png",
+  "tex_mix": 1.0,
+  "rim": 0.0,
+  "emit": [],
+  "outline": [
+   0.26575484274328187,
+   0.2529353587600891,
+   0.26575484274328187
+  ],
+  "mtoon": {
+   "shadingShiftFactor": -0.2737,
+   "shadingToonyFactor": 0.8947,
+   "parametricRimColorFactor": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "parametricRimFresnelPowerFactor": 3.0,
+   "parametricRimLiftFactor": 0.0,
+   "outlineWidthMode": "worldCoordinates",
+   "outlineWidthFactor": 0.0032
+  },
+  "alpha": false
+ },
+ "FPEyeWhiteR": {
+  "lit": [
+   255,
+   255,
+   255
+  ],
+  "shade": [
+   225,
+   220,
+   225
+  ],
+  "tex": "fp_eyewhite_R.png",
+  "tex_mix": 1.0,
+  "rim": 0.0,
+  "emit": [],
+  "outline": [
+   0.26575484274328187,
+   0.2529353587600891,
+   0.26575484274328187
+  ],
+  "mtoon": {
+   "shadingShiftFactor": -0.2737,
+   "shadingToonyFactor": 0.8947,
+   "parametricRimColorFactor": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "parametricRimFresnelPowerFactor": 3.0,
+   "parametricRimLiftFactor": 0.0,
+   "outlineWidthMode": "worldCoordinates",
+   "outlineWidthFactor": 0.0032
+  },
+  "alpha": false
+ },
+ "FPHighlight": {
+  "lit": [
+   255,
+   255,
+   255
+  ],
+  "shade": [
+   222,
+   190,
+   182
+  ],
+  "tex": "fp_highlight.png",
+  "tex_mix": 1.0,
+  "rim": 0.0,
+  "emit": [
+   255.0,
+   255.0,
+   255.0,
+   0.6
+  ],
+  "outline": [
+   0.2580216755762118,
+   0.18320510432501363,
+   0.16666204288910405
+  ],
+  "mtoon": {
+   "shadingShiftFactor": -0.2737,
+   "shadingToonyFactor": 0.8947,
+   "parametricRimColorFactor": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "parametricRimFresnelPowerFactor": 3.0,
+   "parametricRimLiftFactor": 0.0,
+   "outlineWidthMode": "worldCoordinates",
+   "outlineWidthFactor": 0.0032
+  },
+  "alpha": true
+ },
+ "FPIris": {
+  "lit": [
+   255,
+   255,
+   255
+  ],
+  "shade": [
+   225,
+   215,
+   215
+  ],
+  "tex": "fp_iris.png",
+  "tex_mix": 1.0,
+  "rim": 0.0,
+  "emit": [],
+  "outline": [
+   0.26575484274328187,
+   0.2404607842541187,
+   0.2404607842541187
+  ],
+  "mtoon": {
+   "shadingShiftFactor": -0.2737,
+   "shadingToonyFactor": 0.8947,
+   "parametricRimColorFactor": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "parametricRimFresnelPowerFactor": 3.0,
+   "parametricRimLiftFactor": 0.0,
+   "outlineWidthMode": "worldCoordinates",
+   "outlineWidthFactor": 0.0032
+  },
+  "alpha": true
+ },
+ "FPLid": {
+  "lit": [
+   214,
+   158,
+   118
+  ],
+  "shade": [
+   160,
+   100,
+   72
+  ],
+  "tex": "",
+  "tex_mix": 1.0,
+  "rim": 0.0,
+  "emit": [],
+  "outline": [
+   0.1255288670741696,
+   0.04463542223469772,
+   0.021667616461909515
+  ],
+  "mtoon": {
+   "shadingShiftFactor": -0.2737,
+   "shadingToonyFactor": 0.8947,
+   "parametricRimColorFactor": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "parametricRimFresnelPowerFactor": 3.0,
+   "parametricRimLiftFactor": 0.0,
+   "outlineWidthMode": "worldCoordinates",
+   "outlineWidthFactor": 0.0032
+  },
+  "alpha": false
+ },
+ "FPMouth": {
+  "lit": [
+   255,
+   255,
+   255
+  ],
+  "shade": [
+   225,
+   215,
+   215
+  ],
+  "tex": "fp_mouth.png",
+  "tex_mix": 1.0,
+  "rim": 0.0,
+  "emit": [],
+  "outline": [
+   0.26575484274328187,
+   0.2404607842541187,
+   0.2404607842541187
+  ],
+  "mtoon": {
+   "shadingShiftFactor": -0.2737,
+   "shadingToonyFactor": 0.8947,
+   "parametricRimColorFactor": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "parametricRimFresnelPowerFactor": 3.0,
+   "parametricRimLiftFactor": 0.0,
+   "outlineWidthMode": "worldCoordinates",
+   "outlineWidthFactor": 0.0032
+  },
+  "alpha": true
+ },
+ "FPMouthInner": {
+  "lit": [
+   255,
+   255,
+   255
+  ],
+  "shade": [
+   200,
+   190,
+   190
+  ],
+  "tex": "fp_mouth_inner.png",
+  "tex_mix": 1.0,
+  "rim": 0.0,
+  "emit": [],
+  "outline": [
+   0.20509054438238147,
+   0.18320510432501363,
+   0.18320510432501363
+  ],
+  "mtoon": {
+   "shadingShiftFactor": -0.2737,
+   "shadingToonyFactor": 0.8947,
+   "parametricRimColorFactor": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "parametricRimFresnelPowerFactor": 3.0,
+   "parametricRimLiftFactor": 0.0,
+   "outlineWidthMode": "worldCoordinates",
+   "outlineWidthFactor": 0.0032
+  },
+  "alpha": false
  },
  "Gloves": {
   "lit": [
@@ -170,7 +658,21 @@
    0.007332896170173382,
    0.003157522164304246,
    0.0019326106975838804
-  ]
+  ],
+  "mtoon": {
+   "shadingShiftFactor": -0.4947,
+   "shadingToonyFactor": 0.9474,
+   "parametricRimColorFactor": [
+    0.0797,
+    0.1049,
+    0.15
+   ],
+   "parametricRimFresnelPowerFactor": 3.0,
+   "parametricRimLiftFactor": 0.0,
+   "outlineWidthMode": "worldCoordinates",
+   "outlineWidthFactor": 0.0032
+  },
+  "alpha": false
  },
  "Glow": {
   "lit": [
@@ -196,7 +698,21 @@
    0.35,
    0.1255288670741696,
    0.02731980648533566
-  ]
+  ],
+  "mtoon": {
+   "shadingShiftFactor": -0.4947,
+   "shadingToonyFactor": 0.9474,
+   "parametricRimColorFactor": [
+    0.0,
+    0.0,
+    0.0
+   ],
+   "parametricRimFresnelPowerFactor": 3.0,
+   "parametricRimLiftFactor": 0.0,
+   "outlineWidthMode": "worldCoordinates",
+   "outlineWidthFactor": 0.0032
+  },
+  "alpha": false
  },
  "Hair": {
   "lit": [
@@ -217,7 +733,21 @@
    0.02301385809111553,
    0.006619544198302526,
    0.0023047350839035894
-  ]
+  ],
+  "mtoon": {
+   "shadingShiftFactor": -0.4947,
+   "shadingToonyFactor": 0.9474,
+   "parametricRimColorFactor": [
+    0.2,
+    0.1224,
+    0.065
+   ],
+   "parametricRimFresnelPowerFactor": 3.0,
+   "parametricRimLiftFactor": 0.0,
+   "outlineWidthMode": "worldCoordinates",
+   "outlineWidthFactor": 0.0032
+  },
+  "alpha": false
  },
  "Jacket": {
   "lit": [
@@ -238,7 +768,21 @@
    0.1471777741586555,
    0.1255288670741696,
    0.10891317467029452
-  ]
+  ],
+  "mtoon": {
+   "shadingShiftFactor": -0.4947,
+   "shadingToonyFactor": 0.9474,
+   "parametricRimColorFactor": [
+    0.0797,
+    0.1049,
+    0.15
+   ],
+   "parametricRimFresnelPowerFactor": 3.0,
+   "parametricRimLiftFactor": 0.0,
+   "outlineWidthMode": "worldCoordinates",
+   "outlineWidthFactor": 0.0032
+  },
+  "alpha": false
  },
  "KneePad": {
   "lit": [
@@ -259,7 +803,21 @@
    0.0059458182312375155,
    0.006619544198302526,
    0.009714347992344111
-  ]
+  ],
+  "mtoon": {
+   "shadingShiftFactor": -0.4947,
+   "shadingToonyFactor": 0.9474,
+   "parametricRimColorFactor": [
+    0.1062,
+    0.1399,
+    0.2
+   ],
+   "parametricRimFresnelPowerFactor": 3.0,
+   "parametricRimLiftFactor": 0.0,
+   "outlineWidthMode": "worldCoordinates",
+   "outlineWidthFactor": 0.0032
+  },
+  "alpha": false
  },
  "Leather": {
   "lit": [
@@ -280,7 +838,21 @@
    0.021667616461909515,
    0.007332896170173382,
    0.0023047350839035894
-  ]
+  ],
+  "mtoon": {
+   "shadingShiftFactor": -0.4947,
+   "shadingToonyFactor": 0.9474,
+   "parametricRimColorFactor": [
+    0.0797,
+    0.1049,
+    0.15
+   ],
+   "parametricRimFresnelPowerFactor": 3.0,
+   "parametricRimLiftFactor": 0.0,
+   "outlineWidthMode": "worldCoordinates",
+   "outlineWidthFactor": 0.0032
+  },
+  "alpha": false
  },
  "Pants": {
   "lit": [
@@ -301,7 +873,21 @@
    0.010589781598336028,
    0.010589781598336028,
    0.01450816206401186
-  ]
+  ],
+  "mtoon": {
+   "shadingShiftFactor": -0.4947,
+   "shadingToonyFactor": 0.9474,
+   "parametricRimColorFactor": [
+    0.0637,
+    0.0839,
+    0.12
+   ],
+   "parametricRimFresnelPowerFactor": 3.0,
+   "parametricRimLiftFactor": 0.0,
+   "outlineWidthMode": "worldCoordinates",
+   "outlineWidthFactor": 0.0032
+  },
+  "alpha": false
  },
  "Patch": {
   "lit": [
@@ -322,7 +908,21 @@
    0.18320510432501363,
    0.16265939724086134,
    0.18320510432501363
-  ]
+  ],
+  "mtoon": {
+   "shadingShiftFactor": -0.4947,
+   "shadingToonyFactor": 0.9474,
+   "parametricRimColorFactor": [
+    0.0797,
+    0.1049,
+    0.15
+   ],
+   "parametricRimFresnelPowerFactor": 3.0,
+   "parametricRimLiftFactor": 0.0,
+   "outlineWidthMode": "worldCoordinates",
+   "outlineWidthFactor": 0.0032
+  },
+  "alpha": false
  },
  "Scarf": {
   "lit": [
@@ -343,7 +943,21 @@
    0.07164854159283689,
    0.0053113333558688185,
    0.003157522164304246
-  ]
+  ],
+  "mtoon": {
+   "shadingShiftFactor": -0.4947,
+   "shadingToonyFactor": 0.9474,
+   "parametricRimColorFactor": [
+    0.22,
+    0.1004,
+    0.0591
+   ],
+   "parametricRimFresnelPowerFactor": 3.0,
+   "parametricRimLiftFactor": 0.0,
+   "outlineWidthMode": "worldCoordinates",
+   "outlineWidthFactor": 0.0032
+  },
+  "alpha": false
  },
  "Shirt": {
   "lit": [
@@ -364,7 +978,21 @@
    0.002712859589181213,
    0.003157522164304246,
    0.007332896170173382
-  ]
+  ],
+  "mtoon": {
+   "shadingShiftFactor": -0.4947,
+   "shadingToonyFactor": 0.9474,
+   "parametricRimColorFactor": [
+    0.0637,
+    0.0839,
+    0.12
+   ],
+   "parametricRimFresnelPowerFactor": 3.0,
+   "parametricRimLiftFactor": 0.0,
+   "outlineWidthMode": "worldCoordinates",
+   "outlineWidthFactor": 0.0032
+  },
+  "alpha": false
  },
  "Skin": {
   "lit": [
@@ -385,7 +1013,21 @@
    0.1255288670741696,
    0.04463542223469772,
    0.021667616461909515
-  ]
+  ],
+  "mtoon": {
+   "shadingShiftFactor": -0.4947,
+   "shadingToonyFactor": 0.9474,
+   "parametricRimColorFactor": [
+    0.12,
+    0.0839,
+    0.0637
+   ],
+   "parametricRimFresnelPowerFactor": 3.0,
+   "parametricRimLiftFactor": 0.0,
+   "outlineWidthMode": "worldCoordinates",
+   "outlineWidthFactor": 0.0032
+  },
+  "alpha": false
  },
  "Steel": {
   "lit": [
@@ -406,6 +1048,20 @@
    0.06666200758784326,
    0.07164854159283689,
    0.07949778392680211
-  ]
+  ],
+  "mtoon": {
+   "shadingShiftFactor": -0.4947,
+   "shadingToonyFactor": 0.9474,
+   "parametricRimColorFactor": [
+    0.1859,
+    0.2448,
+    0.35
+   ],
+   "parametricRimFresnelPowerFactor": 3.0,
+   "parametricRimLiftFactor": 0.0,
+   "outlineWidthMode": "worldCoordinates",
+   "outlineWidthFactor": 0.0032
+  },
+  "alpha": false
  }
 }

@@ -6,6 +6,7 @@ extends Node3D
 
 const BASE := "res://art/generated/protagonist_ww3d/"
 const TOON := preload(BASE + "godot/ww_toon.gdshader")
+const TOON_CUT := preload(BASE + "godot/ww_toon_cut.gdshader")
 const OUTLINE := preload(BASE + "godot/ww_outline.gdshader")
 const SIGIL := preload(BASE + "godot/ww_sigil.gdshader")
 const SLASH := preload(BASE + "godot/ww_slash.gdshader")
@@ -23,6 +24,7 @@ func _ready() -> void:
 	add_child(hero)
 	_apply_toon(hero)
 	anim = hero.find_child("AnimationPlayer", true, false)
+	_setup_springs()
 	_build_vfx()
 	add_child(vfx_root)
 	var args := OS.get_cmdline_user_args()
@@ -50,12 +52,16 @@ func _material(name: String) -> Material:
 		return null
 	var p: Dictionary = palette[key]
 	var m := ShaderMaterial.new()
-	m.shader = TOON
+	m.shader = TOON_CUT if p.get("alpha", false) else TOON
 	m.set_shader_parameter("lit_color", _c8(p["lit"]))
 	m.set_shader_parameter("shade_color", _c8(p["shade"]))
-	m.set_shader_parameter("rim", float(p["rim"]))
-	if key == "Face":
-		m.set_shader_parameter("ramp", Vector2(0.22, 0.34))
+	var mt: Dictionary = p.get("mtoon", {})
+	if mt.size() > 0:
+		m.set_shader_parameter("shading_shift", float(mt["shadingShiftFactor"]))
+		m.set_shader_parameter("shading_toony", float(mt["shadingToonyFactor"]))
+		var rc: Array = mt["parametricRimColorFactor"]
+		m.set_shader_parameter("rim_color", Color(pow(rc[0], 1.0 / 2.2), pow(rc[1], 1.0 / 2.2), pow(rc[2], 1.0 / 2.2)))
+		m.set_shader_parameter("rim_fresnel_power", float(mt["parametricRimFresnelPowerFactor"]))
 	if p["tex"] != "":
 		m.set_shader_parameter("detail_tex", load(BASE + "exports/textures/" + p["tex"]))
 		m.set_shader_parameter("tex_mix", float(p["tex_mix"]))
@@ -70,7 +76,7 @@ func _material(name: String) -> Material:
 	var oc: Array = p["outline"]
 	ol.set_shader_parameter("outline_color", Color(pow(oc[0], 1.0 / 2.2), pow(oc[1], 1.0 / 2.2), pow(oc[2], 1.0 / 2.2)))
 	ol.set_shader_parameter("thickness", 0.0045 if key.begins_with("Hair") else 0.0032)
-	if p["emit"].size() != 4:
+	if p["emit"].size() != 4 and not key.begins_with("FP"):
 		m.next_pass = ol
 	return m
 
@@ -88,6 +94,49 @@ func _apply_toon(n: Node) -> void:
 			mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	for c in n.get_children():
 		_apply_toon(c)
+
+
+var springs: SpringBoneSimulator3D
+var skel: Skeleton3D
+
+
+func _setup_springs() -> void:
+	# VRMC_springBone-style chains exported by the Blender build (exports/springbones.json)
+	skel = hero.find_child("Skeleton3D", true, false)
+	if skel == null or not FileAccess.file_exists(BASE + "exports/springbones.json"):
+		return
+	var cfg: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(BASE + "exports/springbones.json"))
+	springs = SpringBoneSimulator3D.new()
+	skel.add_child(springs)
+	var chains: Array = cfg["chains"]
+	springs.setting_count = chains.size()
+	for i in chains.size():
+		var c: Dictionary = chains[i]
+		var j: Array = c["joints"]
+		springs.set_root_bone_name(i, j[0])
+		springs.set_end_bone_name(i, j[j.size() - 1])
+		springs.set_extend_end_bone(i, true)
+		springs.set_end_bone_length(i, 0.05)
+		springs.set_stiffness(i, float(c["stiffness"]))
+		springs.set_drag(i, float(c["drag"]))
+		springs.set_gravity(i, float(c["gravity"]))
+		springs.set_radius(i, float(c["radius"]))
+	var col := SpringBoneCollisionSphere3D.new()
+	col.bone_name = "head"
+	col.radius = 0.105
+	col.position_offset = Vector3(0, 0.03, 0)
+	springs.add_child(col)
+	print("SPRINGS ", chains.size())
+
+
+func set_expression(name: String, w := 1.0) -> void:
+	# VRM preset expression = morph targets of the same name on every face-part mesh
+	for mi in hero.find_children("*", "MeshInstance3D", true, false):
+		var m := mi as MeshInstance3D
+		if m.mesh == null:
+			continue
+		for b in m.mesh.get_blend_shape_count():
+			m.set_blend_shape_value(b, w if str(m.mesh.get_blend_shape_name(b)) == name else 0.0)
 
 
 func _arc_mesh(radius: float, width: float, a0: float, a1: float, segs := 64) -> ArrayMesh:
@@ -174,6 +223,8 @@ func _shot(dir: String, name: String) -> void:
 func _capture(dir: String) -> void:
 	DirAccess.make_dir_recursive_absolute(dir)
 	vfx_root.visible = false
+	if springs:
+		springs.active = false            # sheet/face shots at the rest pose; springs are exercised below
 	if anim:
 		anim.play("Idle")
 	await get_tree().create_timer(0.6).timeout
@@ -185,6 +236,35 @@ func _capture(dir: String) -> void:
 	cam.position = Vector3(0.3, 1.63, 1.1)
 	cam.look_at(Vector3(0, 1.62, 0))
 	await _shot(dir, "godot_face")
+	cam.position = Vector3(0.0, 1.625, 0.42)
+	cam.look_at(Vector3(0, 1.62, 0))
+	await _shot(dir, "godot_eyes")
+	cam.position = Vector3(0.0, 1.61, 0.75)
+	cam.look_at(Vector3(0, 1.6, 0))
+	for e in ["neutral", "happy", "angry", "surprised", "blink", "aa"]:
+		set_expression(e, 1.0)
+		await _shot(dir, "godot_expr_" + e)
+	set_expression("neutral", 0.0)
+	if springs:
+		springs.active = true
+	if skel and skel.find_bone("hair_Back_3") >= 0:
+		# springs only show up as motion of the chain relative to its (rigid) head bone; the modified pose is
+		# readable inside the simulator's modification_processed signal
+		var bi := skel.find_bone("hair_Back_3")
+		var hb := skel.find_bone("head")
+		var rel0 := (skel.get_bone_global_rest(hb).affine_inverse() * skel.get_bone_global_rest(bi)).origin
+		var track := {"max": 0.0}
+		var cb := func():
+			var rel := (skel.get_bone_global_pose(hb).affine_inverse() * skel.get_bone_global_pose(bi)).origin
+			track["max"] = max(track["max"], (rel - rel0).length())
+		springs.modification_processed.connect(cb)
+		anim.play("Slash")
+		for f in 90:
+			await get_tree().process_frame
+		springs.modification_processed.disconnect(cb)
+		var maxd: float = track["max"]
+		print("SPRING_MOTION hair_Back_3 relative to head: max %.4f m" % maxd)
+		anim.play("Idle")
 	vfx_root.visible = true
 	if anim:
 		anim.play("Slash")

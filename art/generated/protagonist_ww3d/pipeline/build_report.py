@@ -50,6 +50,23 @@ for d in sorted(glob.glob(os.path.join(ROOT, "iterations", "face_iter*"))):
         f["godot"] = jpg(os.path.join(d, "godot.png"), f"{n}_godot.jpg", 1600)
     faces.append(f)
 
+vroids = []
+for d in sorted(glob.glob(os.path.join(ROOT, "iterations", "vroid_v*"))):
+    if not os.path.exists(os.path.join(d, "face_score.json")):
+        continue
+    n = os.path.basename(d)
+    fs = json.load(open(os.path.join(d, "face_score.json")))
+    bs = json.load(open(os.path.join(d, "score.json")))
+    notes = open(os.path.join(d, "notes.md")).read().split("\n", 2)[-1].strip()
+    v = {"name": n, "face": fs, "body": bs, "notes": notes,
+         "sheet": jpg(os.path.join(d, "sheet.png"), f"{n}_sheet.jpg", 2600),
+         "fsheet": jpg(os.path.join(d, "face_sheet.png"), f"{n}_face_sheet.jpg", 2600)}
+    for key, fn in (("expr", "expr_sheet"), ("ba", "face_before_after"), ("godot", "godot"), ("gexpr", "godot_expr"),
+                    ("vfx", "vfx2")):
+        if any(os.path.exists(os.path.join(d, fn + e)) for e in (".png", ".jpg")):
+            v[key] = jpg(os.path.join(d, fn + ".png"), f"{n}_{fn}.jpg", 1600)
+    vroids.append(v)
+
 last = iters[-1]
 refs = [("design sheet (canonical)", os.path.join(ROOT, "..", "..", "..", "assets", "protagonist_customization", "바운티헤이븐_주인공_디자인_시트.png")),
         ("Codex turnaround (style target)", os.path.join(ROOT, "concepts", "01_ww_turnaround.png")),
@@ -111,6 +128,50 @@ if faces:
 <section><h2>얼굴 반복 기록 (최신순)</h2></section>
 {fsecs}'''
 
+vroid_html = ""
+if vroids:
+    v0, v1 = vroids[0], vroids[-1]
+    vrows = "".join(
+        f'<tr><td>{v["name"].replace("vroid_v", "V")}</td><td>{v["body"]["mean_iou"]:.3f}</td><td>{v["face"]["mean_lm_err_pct"]:.1f}%</td>'
+        f'<td>{v["face"]["mean_skin_iou"]:.3f}</td><td>{v["face"].get("skin_color_err", 0):.1f}</td><td class="l">{html.escape(v["notes"])}</td></tr>'
+        for v in vroids)
+    vsecs = "".join(f'''<section class="iter"><header><h3>{v["name"]}</h3><p class="note">{html.escape(v["notes"])}</p>
+  <p class="metrics">body IoU <b>{v["body"]["mean_iou"]:.3f}</b> · face landmark <b>{v["face"]["mean_lm_err_pct"]:.1f}%</b> · face outline IoU <b>{v["face"]["mean_skin_iou"]:.3f}</b></p></header>
+  <div class="wide"><img src="{v["fsheet"]}" alt="{v["name"]} face sheet" loading="lazy"></div>
+  <div class="wide"><img src="{v["sheet"]}" alt="{v["name"]} body sheet" loading="lazy"></div>
+</section>''' for v in reversed(vroids))
+    figs = ""
+    for key, lab in (("expr", "VRM 표정 프리셋 vs 일러스트 표정 시트 (Blender)"), ("gexpr", "Godot 4.7.1: neutral / happy / angry / surprised / blink / aa"),
+                     ("godot", "Godot 4.7.1 캡처"), ("vfx", "VFX 샷 (새 헤어·얼굴)")):
+        if key in v1:
+            figs += f'<figure><img src="{v1[key]}" alt="{lab}" loading="lazy"><figcaption>{lab}</figcaption></figure>'
+    vroid_html = f'''<section id="vroid"><div class="eyebrow">VRoid 연구 적용</div><h2 style="font-size:28px">VRoid / VRM 규칙 적용</h2>
+<p class="lede">VRoid Studio와 VRM 1.0 사양(MToon, 표정, springBone, 휴머노이드)을 조사해 <code>docs/vroid_research.md</code>에 정리했습니다(출처 포함). 그중 이 모델에 쓸모 있는 규칙을 적용했습니다. 몸 측정값과 얼굴 랜드마크 맞춤은 그대로 유지했습니다.</p>
+<div class="grid2" style="margin-top:16px">
+  <div class="card"><h2>적용한 규칙</h2><ul>
+    <li><b>헤어 그룹</b>: 가이드 곡선별 다발(정수리 2층, 앞머리 좌·중·우, 옆, 뒤, 목덜미, 삐침), 초승달 단면, 끝 가늘어짐·비틀림·끝 말림·랜덤, 잔머리 그룹, 실루엣 가이드</li>
+    <li><b>눈 레이어</b>: 흰자, 홍채(eye 본으로 시선), 하이라이트, 눈선, 눈꺼풀. 얼굴 눈 구멍은 알파 컷</li>
+    <li><b>얼굴 파츠 분리와 표정</b>: 눈썹·입·입 안을 분리하고, VRM 프리셋 이름으로 셰이프 키 13개(blink, blinkLeft, blinkRight, aa, ih, ou, ee, oh, happy, angry, sad, relaxed, surprised)</li>
+    <li><b>MToon 1.0</b>: 모든 머티리얼에 shadingShift, shadingToony, parametric rim, world outline 값을 기록하고, Godot 셰이더를 같은 공식으로 구현</li>
+    <li><b>스프링본</b>: 헤어 그룹 6개와 망토 3줄의 체인, 머리 충돌 구. Godot SpringBoneSimulator3D에서 Slash 중 뒷머리 끝이 머리 대비 최대 4.7cm 흔들리는 것을 측정</li>
+    <li>VRM 파일 내보내기는 이 Mac의 Blender에 VRM 애드온이 없어 하지 못했습니다. 대신 GLB에 VRM 이름 규칙을 맞추고 springbones.json, expressions.json을 함께 냈습니다.</li>
+  </ul></div>
+  <div class="card"><h2>점수 {v0["name"].replace("vroid_v", "V")} → {v1["name"].replace("vroid_v", "V")}</h2>
+   <p class="metrics">몸 IoU <b>{v0["body"]["mean_iou"]:.3f} → {v1["body"]["mean_iou"]:.3f}</b> · 얼굴 랜드마크 <b>{v0["face"]["mean_lm_err_pct"]:.1f}% → {v1["face"]["mean_lm_err_pct"]:.1f}%</b> · 얼굴 윤곽 IoU <b>{v0["face"]["mean_skin_iou"]:.3f} → {v1["face"]["mean_skin_iou"]:.3f}</b></p>
+   <div class="scroll"><table><thead><tr><th>iter</th><th>몸 IoU</th><th>얼굴 랜드마크</th><th>얼굴 IoU</th><th>피부색</th><th class="l">변경</th></tr></thead><tbody>{vrows}</tbody></table></div>
+   <h2 style="margin-top:16px">아직 다른 점</h2><ul>
+    <li>머리카락은 더 부스스해졌지만, 일러스트의 가는 곱슬 다발과 잉크 선 질감에는 못 미칩니다. 정수리 다발이 겹치는 부분이 줄무늬처럼 보입니다.</li>
+    <li>표정은 데칼 이동과 셰이프 키 수준입니다. 일러스트처럼 볼과 입 주변 형태까지 바뀌지는 않고, 웃는 눈(^^)도 반쯤 감긴 눈 정도입니다.</li>
+    <li>홍채 원판은 보이는 부분을 바탕으로 복원한 단순한 방사형 그라데이션입니다.</li>
+    <li>VRM(.vrm) 파일은 없습니다. VRM 애드온 설치가 필요합니다.</li>
+  </ul></div>
+</div>
+<div class="grid2" style="margin-top:16px"><div class="card"><h2>전후 비교 (일러스트 · 적용 전 · 적용 후)</h2>{f'<img src="{v1["ba"]}" alt="before after" style="width:100%;border-radius:4px">' if "ba" in v1 else ""}</div>
+<div class="pair">{figs}</div></div>
+</section>
+<section><h2>VRoid 적용 기록 (최신순)</h2></section>
+{vsecs}'''
+
 sections = []
 for i in reversed(iters):
     s = i["score"]
@@ -165,6 +226,7 @@ a {{ color:var(--rust); }} a:focus-visible {{ outline:2px solid var(--brass); }}
   <p class="lede">바운티헤이븐 주인공 디자인 시트에서 머리·눈·턱·어깨·허리·무릎 높이를 측정해 몸을 로프트로 만들고, 셀 셰이딩·외곽선·레이어드 의상·헤어 락·VFX를 올렸습니다. 이미지(눈·눈썹·입 데칼, 문양, 시질, 천 텍스처, 스타일 타깃)는 Codex(ima2, GPT OAuth)로 생성했습니다. 반복 {len(iters) - 1}회, 최신은 {last["name"]}.</p>
 </header>
 <section class="hero"><img src="{hero}" alt="latest VFX render"></section>
+{vroid_html}
 {face_html}
 <section class="grid2">
   <div class="card"><h2>실루엣 IoU (일러스트 vs 3D, 4뷰 평균)</h2>{chart}</div>

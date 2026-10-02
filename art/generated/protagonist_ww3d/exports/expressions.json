@@ -1,0 +1,34 @@
+{
+ "preset": [
+  "blink",
+  "blinkLeft",
+  "blinkRight",
+  "aa",
+  "ih",
+  "ou",
+  "ee",
+  "oh",
+  "happy",
+  "angry",
+  "sad",
+  "relaxed",
+  "surprised"
+ ],
+ "meshes": [
+  "FPLidR",
+  "FPEyelineR",
+  "FPBrowR",
+  "FPLidL",
+  "FPEyelineL",
+  "FPBrowL",
+  "FPMouth",
+  "FPMouthInner"
+ ],
+ "lookAt": {
+  "type": "bone",
+  "bones": [
+   "eye.L",
+   "eye.R"
+  ]
+ }
+}

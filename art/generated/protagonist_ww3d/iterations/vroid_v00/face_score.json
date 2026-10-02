@@ -1,0 +1,49 @@
+{
+ "views": {
+  "front": {
+   "lm_err_pct": {
+    "brow_r": 1.0,
+    "brow_l": 3.4,
+    "nose": 3.8,
+    "mouth": 0.4,
+    "mouth_rc": 3.7,
+    "mouth_lc": 6.2,
+    "chin": 2.7
+   },
+   "mean_lm_err_pct": 3.03,
+   "skin_iou": 0.5667,
+   "skin_color_err": 1.4
+  },
+  "q34": {
+   "lm_err_pct": {
+    "nose": 8.2,
+    "mouth": 32.8,
+    "chin": 7.8,
+    "ear": 14.7
+   },
+   "mean_lm_err_pct": 15.88,
+   "skin_iou": 0.6329,
+   "skin_color_err": 3.0
+  },
+  "side": {
+   "lm_err_pct": {
+    "nose": 23.8,
+    "mouth": 16.6,
+    "ear": 16.3
+   },
+   "mean_lm_err_pct": 18.9,
+   "skin_iou": 0.6386,
+   "skin_color_err": 7.3
+  }
+ },
+ "mean_lm_err_pct": 12.6,
+ "mean_skin_iou": 0.6127,
+ "skin_color_err": 3.9,
+ "note": "before VRoid conventions (state at 343ca74)",
+ "mesh": {
+  "chin_z": 1.5338400602340698,
+  "eye_z": 1.625344262295082,
+  "iod": 0.068,
+  "face_w_eye": 0.13439321517944336
+ }
+}
